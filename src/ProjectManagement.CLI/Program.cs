@@ -7,10 +7,12 @@ using Microsoft.Extensions.Logging;
 using ProjectManagement.Application.Services;
 using ProjectManagement.Core.Interfaces;
 using ProjectManagement.Infrastructure.Claude;
+using ProjectManagement.Infrastructure.Data;
 using ProjectManagement.Infrastructure.Data.DbContext;
 using ProjectManagement.Infrastructure.Data.Repositories;
 using ProjectManagement.Infrastructure.Git;
 using ProjectManagement.CLI.Commands;
+using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace ProjectManagement.CLI;
@@ -51,6 +53,7 @@ class Program
                 services.AddScoped<IUnitOfWork, UnitOfWork>();
 
                 // Infrastructure Services
+                services.AddScoped<IDatabaseInitializer, DatabaseInitializer>();
                 services.AddScoped<IClaudeApiService, ClaudeApiService>();
                 services.AddScoped<IClaudeCodeIntegration, ClaudeCodeIntegration>();
                 services.AddScoped<IGitService, LibGit2SharpService>();
@@ -66,6 +69,20 @@ class Program
                 services.AddLogging(configure => configure.AddConsole());
             })
             .Build();
+
+        // Initialize database
+        using (var scope = host.Services.CreateScope())
+        {
+            var dbInitializer = scope.ServiceProvider.GetRequiredService<IDatabaseInitializer>();
+            var wasCreated = await dbInitializer.InitializeAsync();
+
+            if (wasCreated)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("Database created successfully.");
+                Console.ResetColor();
+            }
+        }
 
         var registrar = new TypeRegistrar(host.Services);
         var app = new CommandApp(registrar);
