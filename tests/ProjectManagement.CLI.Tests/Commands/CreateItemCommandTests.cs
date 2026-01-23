@@ -407,4 +407,247 @@ public class CreateItemCommandTests : IDisposable
         var workItemType = typeSelection == "User Story" ? WorkItemType.UserStory : WorkItemType.Bug;
         Assert.Equal(WorkItemType.Bug, workItemType);
     }
+
+    [Fact]
+    public void TypeRegistrar_RegistersAndResolvesCommandType()
+    {
+        // Arrange - Create a service collection with IWorkItemService
+        var services = new ServiceCollection();
+        services.AddSingleton(_mockWorkItemService.Object);
+
+        var rootProvider = services.BuildServiceProvider();
+        var registrar = new TestTypeRegistrar(rootProvider);
+
+        // Act - Register the command type (as Spectre.Console.Cli does)
+        registrar.Register(typeof(CreateItemCommand), typeof(CreateItemCommand));
+
+        // Build the resolver
+        var resolver = registrar.Build();
+
+        // Assert - Verify the command can be resolved with its dependencies
+        var resolvedCommand = resolver.Resolve(typeof(CreateItemCommand));
+        Assert.NotNull(resolvedCommand);
+        Assert.IsType<CreateItemCommand>(resolvedCommand);
+    }
+
+    [Fact]
+    public void TypeRegistrar_WhenCommandHasDependency_ResolvesFromPrimaryProvider()
+    {
+        // Arrange - Create a service collection with IWorkItemService
+        var services = new ServiceCollection();
+        services.AddSingleton(_mockWorkItemService.Object);
+
+        var rootProvider = services.BuildServiceProvider();
+        var registrar = new TestTypeRegistrar(rootProvider);
+
+        // Act - Register the command type
+        registrar.Register(typeof(CreateItemCommand), typeof(CreateItemCommand));
+
+        // Build the resolver
+        var resolver = registrar.Build();
+
+        // Assert - Verify the command's dependency (IWorkItemService) is resolved
+        var resolvedCommand = resolver.Resolve(typeof(CreateItemCommand)) as CreateItemCommand;
+        Assert.NotNull(resolvedCommand);
+
+        // Verify the command has the correct IWorkItemService injected
+        var serviceField = typeof(CreateItemCommand)
+            .GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+            .FirstOrDefault(f => f.FieldType == typeof(IWorkItemService));
+
+        Assert.NotNull(serviceField);
+        var injectedService = serviceField.GetValue(resolvedCommand) as IWorkItemService;
+        Assert.Same(_mockWorkItemService.Object, injectedService);
+    }
+
+    [Fact]
+    public void TypeRegistrar_RegisterInstance_ResolvesSameInstance()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var rootProvider = services.BuildServiceProvider();
+        var registrar = new TestTypeRegistrar(rootProvider);
+
+        var instance = new object();
+
+        // Act - Register an instance
+        registrar.RegisterInstance(typeof(object), instance);
+
+        // Build the resolver
+        var resolver = registrar.Build();
+
+        // Assert - Verify the same instance is resolved
+        var resolved = resolver.Resolve(typeof(object));
+        Assert.Same(instance, resolved);
+    }
+
+    [Fact]
+    public void TypeRegistrar_RegisterLazy_ResolvesFactoryResult()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var rootProvider = services.BuildServiceProvider();
+        var registrar = new TestTypeRegistrar(rootProvider);
+
+        var expectedValue = "test-value";
+
+        // Act - Register a lazy factory
+        registrar.RegisterLazy(typeof(string), () => expectedValue);
+
+        // Build the resolver
+        var resolver = registrar.Build();
+
+        // Assert - Verify the factory result is resolved
+        var resolved = resolver.Resolve(typeof(string)) as string;
+        Assert.Equal(expectedValue, resolved);
+    }
 }
+
+#region Test Helpers for TypeRegistrar
+
+// Test implementation of TypeRegistrar to expose Build() for testing
+internal class TestTypeRegistrar : Spectre.Console.Cli.ITypeRegistrar, IDisposable
+{
+    private readonly IServiceScope _scope;
+    private readonly Dictionary<Type, Type> _typeRegistrations;
+    private readonly Dictionary<Type, object> _instanceRegistrations;
+    private readonly Dictionary<Type, Func<object>> _lazyRegistrations;
+    private bool _disposed = false;
+
+    public TestTypeRegistrar(IServiceProvider services)
+    {
+        _scope = services.CreateScope();
+        _typeRegistrations = new Dictionary<Type, Type>();
+        _instanceRegistrations = new Dictionary<Type, object>();
+        _lazyRegistrations = new Dictionary<Type, Func<object>>();
+    }
+
+    public Spectre.Console.Cli.ITypeResolver Build()
+    {
+        return new TestTypeResolver(
+            _typeRegistrations,
+            _instanceRegistrations,
+            _lazyRegistrations,
+            _scope.ServiceProvider);
+    }
+
+    public void Register(Type service, Type implementation)
+    {
+        _typeRegistrations[service] = implementation;
+    }
+
+    public void RegisterInstance(Type service, object implementation)
+    {
+        _instanceRegistrations[service] = implementation;
+    }
+
+    public void RegisterLazy(Type service, Func<object> factory)
+    {
+        _lazyRegistrations[service] = factory;
+    }
+
+    public void Dispose()
+    {
+        if (!_disposed)
+        {
+            _scope.Dispose();
+            _disposed = true;
+        }
+    }
+}
+
+internal class TestTypeResolver : Spectre.Console.Cli.ITypeResolver
+{
+    private readonly Dictionary<Type, Type> _typeRegistrations;
+    private readonly Dictionary<Type, object> _instanceRegistrations;
+    private readonly Dictionary<Type, Func<object>> _lazyRegistrations;
+    private readonly IServiceProvider _scopedProvider;
+    private readonly Dictionary<Type, object> _lazyCache = new();
+
+    public TestTypeResolver(
+        Dictionary<Type, Type> typeRegistrations,
+        Dictionary<Type, object> instanceRegistrations,
+        Dictionary<Type, Func<object>> lazyRegistrations,
+        IServiceProvider scopedProvider)
+    {
+        _typeRegistrations = typeRegistrations;
+        _instanceRegistrations = instanceRegistrations;
+        _lazyRegistrations = lazyRegistrations;
+        _scopedProvider = scopedProvider;
+    }
+
+    public object? Resolve(Type? type)
+    {
+        if (type == null) return null;
+
+        // Check instance registrations first (singletons)
+        if (_instanceRegistrations.TryGetValue(type, out var instance))
+        {
+            return instance;
+        }
+
+        // Check lazy registrations (factories)
+        if (_lazyRegistrations.TryGetValue(type, out var factory))
+        {
+            if (!_lazyCache.TryGetValue(type, out var cached))
+            {
+                cached = factory();
+                _lazyCache[type] = cached;
+            }
+            return cached;
+        }
+
+        // Check type registrations (transient services - commands)
+        if (_typeRegistrations.TryGetValue(type, out var implementationType))
+        {
+            return InstantiateType(implementationType, _scopedProvider);
+        }
+
+        // Fall back to scoped provider
+        return _scopedProvider.GetService(type);
+    }
+
+    private object? InstantiateType(Type type, IServiceProvider serviceProvider)
+    {
+        // Find the best constructor (the one with the most parameters)
+        var constructors = type.GetConstructors();
+        if (constructors.Length == 0)
+        {
+            // Use parameterless constructor if available
+            return Activator.CreateInstance(type);
+        }
+
+        // Use the constructor with the most parameters
+        var constructor = constructors.OrderByDescending(c => c.GetParameters().Length).First();
+        var parameters = constructor.GetParameters();
+        var args = new object?[parameters.Length];
+
+        // Resolve each parameter
+        for (int i = 0; i < parameters.Length; i++)
+        {
+            var paramType = parameters[i].ParameterType;
+
+            // Check if it's a type we registered (Settings classes, etc.)
+            if (_typeRegistrations.TryGetValue(paramType, out var implType))
+            {
+                args[i] = InstantiateType(implType, serviceProvider);
+            }
+            else
+            {
+                // Get from scoped provider
+                args[i] = serviceProvider.GetService(paramType);
+            }
+
+            if (args[i] == null && !parameters[i].ParameterType.IsClass && !parameters[i].ParameterType.IsInterface)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot resolve service for type '{parameters[i].ParameterType.Name}' " +
+                    $"while activating '{type.Name}'");
+            }
+        }
+
+        return Activator.CreateInstance(type, args)!;
+    }
+}
+
+#endregion
