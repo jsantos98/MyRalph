@@ -1,0 +1,760 @@
+<?xml version="1.0" encoding="utf-8"?>
+<coverage line-rate="0.6474" branch-rate="0.9589" version="1.9" timestamp="1769161975" lines-covered="101" lines-valid="156" branches-covered="70" branches-valid="73">
+  <sources>
+    <source>I:\ClaudeCodeNewTest\src\ProjectManagement.Core\</source>
+  </sources>
+  <packages>
+    <package name="ProjectManagement.Core" line-rate="0.6474" branch-rate="0.9589" complexity="134">
+      <classes>
+        <class name="ProjectManagement.Core.Exceptions.ClaudeIntegrationException" filename="Exceptions\ClaudeIntegrationException.cs" line-rate="0" branch-rate="1" complexity="2">
+          <methods>
+            <method name=".ctor" signature="(System.String)" line-rate="0" branch-rate="1" complexity="1">
+              <lines>
+                <line number="8" hits="0" branch="False" />
+                <line number="9" hits="0" branch="False" />
+                <line number="10" hits="0" branch="False" />
+              </lines>
+            </method>
+            <method name=".ctor" signature="(System.String,System.Exception)" line-rate="0" branch-rate="1" complexity="1">
+              <lines>
+                <line number="12" hits="0" branch="False" />
+                <line number="13" hits="0" branch="False" />
+                <line number="14" hits="0" branch="False" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="8" hits="0" branch="False" />
+            <line number="9" hits="0" branch="False" />
+            <line number="10" hits="0" branch="False" />
+            <line number="12" hits="0" branch="False" />
+            <line number="13" hits="0" branch="False" />
+            <line number="14" hits="0" branch="False" />
+          </lines>
+        </class>
+        <class name="ProjectManagement.Core.Exceptions.DependencyException" filename="Exceptions\DependencyException.cs" line-rate="0" branch-rate="1" complexity="2">
+          <methods>
+            <method name=".ctor" signature="(System.String)" line-rate="0" branch-rate="1" complexity="1">
+              <lines>
+                <line number="8" hits="0" branch="False" />
+                <line number="9" hits="0" branch="False" />
+                <line number="10" hits="0" branch="False" />
+              </lines>
+            </method>
+            <method name=".ctor" signature="(System.String,System.Exception)" line-rate="0" branch-rate="1" complexity="1">
+              <lines>
+                <line number="12" hits="0" branch="False" />
+                <line number="13" hits="0" branch="False" />
+                <line number="14" hits="0" branch="False" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="8" hits="0" branch="False" />
+            <line number="9" hits="0" branch="False" />
+            <line number="10" hits="0" branch="False" />
+            <line number="12" hits="0" branch="False" />
+            <line number="13" hits="0" branch="False" />
+            <line number="14" hits="0" branch="False" />
+          </lines>
+        </class>
+        <class name="ProjectManagement.Core.Exceptions.EntityNotFoundException" filename="Exceptions\EntityNotFoundException.cs" line-rate="0" branch-rate="1" complexity="4">
+          <methods>
+            <method name="get_EntityType" signature="()" line-rate="0" branch-rate="1" complexity="1">
+              <lines>
+                <line number="8" hits="0" branch="False" />
+              </lines>
+            </method>
+            <method name="get_Id" signature="()" line-rate="0" branch-rate="1" complexity="1">
+              <lines>
+                <line number="9" hits="0" branch="False" />
+              </lines>
+            </method>
+            <method name=".ctor" signature="(System.Type,System.Object)" line-rate="0" branch-rate="1" complexity="1">
+              <lines>
+                <line number="12" hits="0" branch="False" />
+                <line number="13" hits="0" branch="False" />
+                <line number="14" hits="0" branch="False" />
+                <line number="15" hits="0" branch="False" />
+                <line number="16" hits="0" branch="False" />
+              </lines>
+            </method>
+            <method name=".ctor" signature="(System.String,System.Type,System.Object)" line-rate="0" branch-rate="1" complexity="1">
+              <lines>
+                <line number="19" hits="0" branch="False" />
+                <line number="20" hits="0" branch="False" />
+                <line number="21" hits="0" branch="False" />
+                <line number="22" hits="0" branch="False" />
+                <line number="23" hits="0" branch="False" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="8" hits="0" branch="False" />
+            <line number="9" hits="0" branch="False" />
+            <line number="12" hits="0" branch="False" />
+            <line number="13" hits="0" branch="False" />
+            <line number="14" hits="0" branch="False" />
+            <line number="15" hits="0" branch="False" />
+            <line number="16" hits="0" branch="False" />
+            <line number="19" hits="0" branch="False" />
+            <line number="20" hits="0" branch="False" />
+            <line number="21" hits="0" branch="False" />
+            <line number="22" hits="0" branch="False" />
+            <line number="23" hits="0" branch="False" />
+          </lines>
+        </class>
+        <class name="ProjectManagement.Core.Exceptions.GitOperationException" filename="Exceptions\GitOperationException.cs" line-rate="0" branch-rate="1" complexity="3">
+          <methods>
+            <method name="get_GitCommand" signature="()" line-rate="0" branch-rate="1" complexity="1">
+              <lines>
+                <line number="8" hits="0" branch="False" />
+              </lines>
+            </method>
+            <method name=".ctor" signature="(System.String,System.String)" line-rate="0" branch-rate="1" complexity="1">
+              <lines>
+                <line number="10" hits="0" branch="False" />
+                <line number="11" hits="0" branch="False" />
+                <line number="12" hits="0" branch="False" />
+                <line number="13" hits="0" branch="False" />
+              </lines>
+            </method>
+            <method name=".ctor" signature="(System.String,System.Exception,System.String)" line-rate="0" branch-rate="1" complexity="1">
+              <lines>
+                <line number="16" hits="0" branch="False" />
+                <line number="17" hits="0" branch="False" />
+                <line number="18" hits="0" branch="False" />
+                <line number="19" hits="0" branch="False" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="8" hits="0" branch="False" />
+            <line number="10" hits="0" branch="False" />
+            <line number="11" hits="0" branch="False" />
+            <line number="12" hits="0" branch="False" />
+            <line number="13" hits="0" branch="False" />
+            <line number="16" hits="0" branch="False" />
+            <line number="17" hits="0" branch="False" />
+            <line number="18" hits="0" branch="False" />
+            <line number="19" hits="0" branch="False" />
+          </lines>
+        </class>
+        <class name="ProjectManagement.Core.Exceptions.InvalidStateTransitionException" filename="Exceptions\InvalidStateTransitionException.cs" line-rate="0" branch-rate="0" complexity="6">
+          <methods>
+            <method name="get_EntityType" signature="()" line-rate="0" branch-rate="1" complexity="1">
+              <lines>
+                <line number="10" hits="0" branch="False" />
+              </lines>
+            </method>
+            <method name="get_CurrentState" signature="()" line-rate="0" branch-rate="1" complexity="1">
+              <lines>
+                <line number="11" hits="0" branch="False" />
+              </lines>
+            </method>
+            <method name="get_TargetState" signature="()" line-rate="0" branch-rate="1" complexity="1">
+              <lines>
+                <line number="12" hits="0" branch="False" />
+              </lines>
+            </method>
+            <method name=".ctor" signature="(System.Enum,System.Enum,System.Type)" line-rate="0" branch-rate="0" complexity="2">
+              <lines>
+                <line number="15" hits="0" branch="True" condition-coverage="0% (0/2)">
+                  <conditions>
+                    <condition number="82" type="jump" coverage="0%" />
+                  </conditions>
+                </line>
+                <line number="16" hits="0" branch="False" />
+                <line number="17" hits="0" branch="False" />
+                <line number="18" hits="0" branch="False" />
+                <line number="19" hits="0" branch="False" />
+                <line number="20" hits="0" branch="False" />
+                <line number="21" hits="0" branch="False" />
+              </lines>
+            </method>
+            <method name=".ctor" signature="(System.String)" line-rate="0" branch-rate="1" complexity="1">
+              <lines>
+                <line number="23" hits="0" branch="False" />
+                <line number="24" hits="0" branch="False" />
+                <line number="25" hits="0" branch="False" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="10" hits="0" branch="False" />
+            <line number="11" hits="0" branch="False" />
+            <line number="12" hits="0" branch="False" />
+            <line number="15" hits="0" branch="True" condition-coverage="0% (0/2)">
+              <conditions>
+                <condition number="82" type="jump" coverage="0%" />
+              </conditions>
+            </line>
+            <line number="16" hits="0" branch="False" />
+            <line number="17" hits="0" branch="False" />
+            <line number="18" hits="0" branch="False" />
+            <line number="19" hits="0" branch="False" />
+            <line number="20" hits="0" branch="False" />
+            <line number="21" hits="0" branch="False" />
+            <line number="23" hits="0" branch="False" />
+            <line number="24" hits="0" branch="False" />
+            <line number="25" hits="0" branch="False" />
+          </lines>
+        </class>
+        <class name="ProjectManagement.Core.Exceptions.ProjectManagementException" filename="Exceptions\ProjectManagementException.cs" line-rate="0" branch-rate="1" complexity="2">
+          <methods>
+            <method name=".ctor" signature="(System.String)" line-rate="0" branch-rate="1" complexity="1">
+              <lines>
+                <line number="8" hits="0" branch="False" />
+                <line number="9" hits="0" branch="False" />
+                <line number="10" hits="0" branch="False" />
+              </lines>
+            </method>
+            <method name=".ctor" signature="(System.String,System.Exception)" line-rate="0" branch-rate="1" complexity="1">
+              <lines>
+                <line number="12" hits="0" branch="False" />
+                <line number="13" hits="0" branch="False" />
+                <line number="14" hits="0" branch="False" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="8" hits="0" branch="False" />
+            <line number="9" hits="0" branch="False" />
+            <line number="10" hits="0" branch="False" />
+            <line number="12" hits="0" branch="False" />
+            <line number="13" hits="0" branch="False" />
+            <line number="14" hits="0" branch="False" />
+          </lines>
+        </class>
+        <class name="ProjectManagement.Core.Entities.DeveloperStory" filename="Entities\DeveloperStory.cs" line-rate="0.9649" branch-rate="0.9761" complexity="60">
+          <methods>
+            <method name="get_WorkItemId" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="13" hits="35" branch="False" />
+              </lines>
+            </method>
+            <method name="get_WorkItem" signature="()" line-rate="0" branch-rate="1" complexity="1">
+              <lines>
+                <line number="18" hits="0" branch="False" />
+              </lines>
+            </method>
+            <method name="get_StoryType" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="23" hits="35" branch="False" />
+              </lines>
+            </method>
+            <method name="get_Title" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="28" hits="69" branch="False" />
+              </lines>
+            </method>
+            <method name="get_Description" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="33" hits="68" branch="False" />
+              </lines>
+            </method>
+            <method name="get_Instructions" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="38" hits="68" branch="False" />
+              </lines>
+            </method>
+            <method name="get_Priority" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="43" hits="35" branch="False" />
+              </lines>
+            </method>
+            <method name="get_Status" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="48" hits="80" branch="False" />
+              </lines>
+            </method>
+            <method name="get_GitBranch" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="53" hits="1" branch="False" />
+              </lines>
+            </method>
+            <method name="get_GitWorktree" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="58" hits="1" branch="False" />
+              </lines>
+            </method>
+            <method name="get_StartedAt" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="63" hits="22" branch="False" />
+              </lines>
+            </method>
+            <method name="get_CompletedAt" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="68" hits="18" branch="False" />
+              </lines>
+            </method>
+            <method name="get_ErrorMessage" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="73" hits="26" branch="False" />
+              </lines>
+            </method>
+            <method name="get_Metadata" signature="()" line-rate="0" branch-rate="1" complexity="1">
+              <lines>
+                <line number="78" hits="0" branch="False" />
+              </lines>
+            </method>
+            <method name="get_Dependencies" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="83" hits="41" branch="False" />
+              </lines>
+            </method>
+            <method name="get_DependentStories" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="88" hits="36" branch="False" />
+              </lines>
+            </method>
+            <method name="get_ExecutionLogs" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="93" hits="36" branch="False" />
+              </lines>
+            </method>
+            <method name="get_WorktreeName" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="98" hits="4" branch="False" />
+              </lines>
+            </method>
+            <method name="UpdateStatus" signature="(ProjectManagement.Core.Enums.DeveloperStoryStatus,System.String)" line-rate="1" branch-rate="1" complexity="10">
+              <lines>
+                <line number="104" hits="24" branch="False" />
+                <line number="105" hits="24" branch="False" />
+                <line number="106" hits="24" branch="False" />
+                <line number="108" hits="24" branch="True" condition-coverage="100% (4/4)">
+                  <conditions>
+                    <condition number="19" type="jump" coverage="100%" />
+                    <condition number="43" type="jump" coverage="100%" />
+                  </conditions>
+                </line>
+                <line number="109" hits="6" branch="False" />
+                <line number="110" hits="6" branch="False" />
+                <line number="111" hits="6" branch="False" />
+                <line number="113" hits="24" branch="True" condition-coverage="100% (4/4)">
+                  <conditions>
+                    <condition number="66" type="jump" coverage="100%" />
+                    <condition number="90" type="jump" coverage="100%" />
+                  </conditions>
+                </line>
+                <line number="114" hits="4" branch="False" />
+                <line number="115" hits="4" branch="False" />
+                <line number="116" hits="4" branch="False" />
+                <line number="118" hits="24" branch="True" condition-coverage="100% (2/2)">
+                  <conditions>
+                    <condition number="117" type="jump" coverage="100%" />
+                  </conditions>
+                </line>
+                <line number="119" hits="6" branch="False" />
+                <line number="121" hits="6" branch="False" />
+                <line number="122" hits="6" branch="False" />
+                <line number="123" hits="6" branch="False" />
+                <line number="124" hits="24" branch="False" />
+              </lines>
+            </method>
+            <method name="CanTransitionTo" signature="(ProjectManagement.Core.Enums.DeveloperStoryStatus)" line-rate="1" branch-rate="1" complexity="30">
+              <lines>
+                <line number="130" hits="15" branch="False" />
+                <line number="131" hits="15" branch="True" condition-coverage="100% (30/30)">
+                  <conditions>
+                    <condition number="13" type="switch" coverage="100%" />
+                    <condition number="127" type="jump" coverage="100%" />
+                    <condition number="138" type="jump" coverage="100%" />
+                    <condition number="50" type="switch" coverage="100%" />
+                    <condition number="80" type="switch" coverage="100%" />
+                    <condition number="106" type="switch" coverage="100%" />
+                    <condition number="133" type="jump" coverage="100%" />
+                    <condition number="144" type="jump" coverage="100%" />
+                  </conditions>
+                </line>
+                <line number="132" hits="15" branch="False" />
+                <line number="133" hits="1" branch="False" />
+                <line number="134" hits="1" branch="False" />
+                <line number="135" hits="1" branch="False" />
+                <line number="136" hits="1" branch="False" />
+                <line number="137" hits="1" branch="False" />
+                <line number="138" hits="1" branch="False" />
+                <line number="139" hits="1" branch="False" />
+                <line number="140" hits="1" branch="False" />
+                <line number="141" hits="1" branch="False" />
+                <line number="142" hits="1" branch="False" />
+                <line number="143" hits="1" branch="False" />
+                <line number="144" hits="1" branch="False" />
+                <line number="145" hits="1" branch="False" />
+                <line number="146" hits="2" branch="False" />
+                <line number="147" hits="15" branch="False" />
+                <line number="148" hits="15" branch="False" />
+              </lines>
+            </method>
+            <method name="AreDependenciesCompleted" signature="()" line-rate="1" branch-rate="0.5" complexity="2">
+              <lines>
+                <line number="154" hits="3" branch="False" />
+                <line number="155" hits="5" branch="True" condition-coverage="50% (1/2)">
+                  <conditions>
+                    <condition number="7" type="jump" coverage="50%" />
+                  </conditions>
+                </line>
+                <line number="156" hits="3" branch="False" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="13" hits="35" branch="False" />
+            <line number="18" hits="0" branch="False" />
+            <line number="23" hits="35" branch="False" />
+            <line number="28" hits="69" branch="False" />
+            <line number="33" hits="68" branch="False" />
+            <line number="38" hits="68" branch="False" />
+            <line number="43" hits="35" branch="False" />
+            <line number="48" hits="80" branch="False" />
+            <line number="53" hits="1" branch="False" />
+            <line number="58" hits="1" branch="False" />
+            <line number="63" hits="22" branch="False" />
+            <line number="68" hits="18" branch="False" />
+            <line number="73" hits="26" branch="False" />
+            <line number="78" hits="0" branch="False" />
+            <line number="83" hits="41" branch="False" />
+            <line number="88" hits="36" branch="False" />
+            <line number="93" hits="36" branch="False" />
+            <line number="98" hits="4" branch="False" />
+            <line number="104" hits="24" branch="False" />
+            <line number="105" hits="24" branch="False" />
+            <line number="106" hits="24" branch="False" />
+            <line number="108" hits="24" branch="True" condition-coverage="100% (4/4)">
+              <conditions>
+                <condition number="19" type="jump" coverage="100%" />
+                <condition number="43" type="jump" coverage="100%" />
+              </conditions>
+            </line>
+            <line number="109" hits="6" branch="False" />
+            <line number="110" hits="6" branch="False" />
+            <line number="111" hits="6" branch="False" />
+            <line number="113" hits="24" branch="True" condition-coverage="100% (4/4)">
+              <conditions>
+                <condition number="66" type="jump" coverage="100%" />
+                <condition number="90" type="jump" coverage="100%" />
+              </conditions>
+            </line>
+            <line number="114" hits="4" branch="False" />
+            <line number="115" hits="4" branch="False" />
+            <line number="116" hits="4" branch="False" />
+            <line number="118" hits="24" branch="True" condition-coverage="100% (2/2)">
+              <conditions>
+                <condition number="117" type="jump" coverage="100%" />
+              </conditions>
+            </line>
+            <line number="119" hits="6" branch="False" />
+            <line number="121" hits="6" branch="False" />
+            <line number="122" hits="6" branch="False" />
+            <line number="123" hits="6" branch="False" />
+            <line number="124" hits="24" branch="False" />
+            <line number="130" hits="15" branch="False" />
+            <line number="131" hits="15" branch="True" condition-coverage="100% (30/30)">
+              <conditions>
+                <condition number="13" type="switch" coverage="100%" />
+                <condition number="127" type="jump" coverage="100%" />
+                <condition number="138" type="jump" coverage="100%" />
+                <condition number="50" type="switch" coverage="100%" />
+                <condition number="80" type="switch" coverage="100%" />
+                <condition number="106" type="switch" coverage="100%" />
+                <condition number="133" type="jump" coverage="100%" />
+                <condition number="144" type="jump" coverage="100%" />
+              </conditions>
+            </line>
+            <line number="132" hits="15" branch="False" />
+            <line number="133" hits="1" branch="False" />
+            <line number="134" hits="1" branch="False" />
+            <line number="135" hits="1" branch="False" />
+            <line number="136" hits="1" branch="False" />
+            <line number="137" hits="1" branch="False" />
+            <line number="138" hits="1" branch="False" />
+            <line number="139" hits="1" branch="False" />
+            <line number="140" hits="1" branch="False" />
+            <line number="141" hits="1" branch="False" />
+            <line number="142" hits="1" branch="False" />
+            <line number="143" hits="1" branch="False" />
+            <line number="144" hits="1" branch="False" />
+            <line number="145" hits="1" branch="False" />
+            <line number="146" hits="2" branch="False" />
+            <line number="147" hits="15" branch="False" />
+            <line number="148" hits="15" branch="False" />
+            <line number="154" hits="3" branch="False" />
+            <line number="155" hits="5" branch="True" condition-coverage="50% (1/2)">
+              <conditions>
+                <condition number="7" type="jump" coverage="50%" />
+              </conditions>
+            </line>
+            <line number="156" hits="3" branch="False" />
+          </lines>
+        </class>
+        <class name="ProjectManagement.Core.Entities.DeveloperStoryDependency" filename="Entities\DeveloperStoryDependency.cs" line-rate="1" branch-rate="1" complexity="6">
+          <methods>
+            <method name="get_DependentStoryId" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="11" hits="6" branch="False" />
+              </lines>
+            </method>
+            <method name="get_DependentStory" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="16" hits="2" branch="False" />
+              </lines>
+            </method>
+            <method name="get_RequiredStoryId" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="21" hits="6" branch="False" />
+              </lines>
+            </method>
+            <method name="get_RequiredStory" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="26" hits="6" branch="False" />
+              </lines>
+            </method>
+            <method name="get_Description" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="31" hits="3" branch="False" />
+              </lines>
+            </method>
+            <method name="get_CreatedAt" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="36" hits="6" branch="False" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="11" hits="6" branch="False" />
+            <line number="16" hits="2" branch="False" />
+            <line number="21" hits="6" branch="False" />
+            <line number="26" hits="6" branch="False" />
+            <line number="31" hits="3" branch="False" />
+            <line number="36" hits="6" branch="False" />
+          </lines>
+        </class>
+        <class name="ProjectManagement.Core.Entities.Entity" filename="Entities\Entity.cs" line-rate="1" branch-rate="1" complexity="1">
+          <methods>
+            <method name="get_Id" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="11" hits="10" branch="False" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="11" hits="10" branch="False" />
+          </lines>
+        </class>
+        <class name="ProjectManagement.Core.Entities.ExecutionLog" filename="Entities\ExecutionLog.cs" line-rate="0.8571" branch-rate="1" complexity="7">
+          <methods>
+            <method name="get_DeveloperStoryId" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="13" hits="15" branch="False" />
+              </lines>
+            </method>
+            <method name="get_DeveloperStory" signature="()" line-rate="0" branch-rate="1" complexity="1">
+              <lines>
+                <line number="18" hits="0" branch="False" />
+              </lines>
+            </method>
+            <method name="get_EventType" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="23" hits="23" branch="False" />
+              </lines>
+            </method>
+            <method name="get_Timestamp" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="28" hits="14" branch="False" />
+              </lines>
+            </method>
+            <method name="get_Details" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="33" hits="5" branch="False" />
+              </lines>
+            </method>
+            <method name="get_ErrorMessage" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="38" hits="5" branch="False" />
+              </lines>
+            </method>
+            <method name="get_Metadata" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="43" hits="5" branch="False" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="13" hits="15" branch="False" />
+            <line number="18" hits="0" branch="False" />
+            <line number="23" hits="23" branch="False" />
+            <line number="28" hits="14" branch="False" />
+            <line number="33" hits="5" branch="False" />
+            <line number="38" hits="5" branch="False" />
+            <line number="43" hits="5" branch="False" />
+          </lines>
+        </class>
+        <class name="ProjectManagement.Core.Entities.WorkItem" filename="Entities\WorkItem.cs" line-rate="1" branch-rate="1" complexity="41">
+          <methods>
+            <method name="get_Type" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="13" hits="29" branch="False" />
+              </lines>
+            </method>
+            <method name="get_Title" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="18" hits="49" branch="False" />
+              </lines>
+            </method>
+            <method name="get_Description" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="23" hits="49" branch="False" />
+              </lines>
+            </method>
+            <method name="get_AcceptanceCriteria" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="28" hits="1" branch="False" />
+              </lines>
+            </method>
+            <method name="get_Priority" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="33" hits="31" branch="False" />
+              </lines>
+            </method>
+            <method name="get_Status" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="38" hits="57" branch="False" />
+              </lines>
+            </method>
+            <method name="get_ErrorMessage" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="43" hits="18" branch="False" />
+              </lines>
+            </method>
+            <method name="get_CreatedAt" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="48" hits="25" branch="False" />
+              </lines>
+            </method>
+            <method name="get_UpdatedAt" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="53" hits="43" branch="False" />
+              </lines>
+            </method>
+            <method name="get_DeveloperStories" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="58" hits="26" branch="False" />
+              </lines>
+            </method>
+            <method name="get_BranchPrefix" signature="()" line-rate="1" branch-rate="1" complexity="2">
+              <lines>
+                <line number="63" hits="3" branch="True" condition-coverage="100% (2/2)">
+                  <conditions>
+                    <condition number="6" type="jump" coverage="100%" />
+                  </conditions>
+                </line>
+              </lines>
+            </method>
+            <method name="get_DefaultBranchName" signature="()" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="68" hits="1" branch="False" />
+              </lines>
+            </method>
+            <method name="UpdateStatus" signature="(ProjectManagement.Core.Enums.WorkItemStatus,System.String)" line-rate="1" branch-rate="1" complexity="1">
+              <lines>
+                <line number="74" hits="16" branch="False" />
+                <line number="75" hits="16" branch="False" />
+                <line number="76" hits="16" branch="False" />
+                <line number="77" hits="16" branch="False" />
+                <line number="78" hits="16" branch="False" />
+              </lines>
+            </method>
+            <method name="CanTransitionTo" signature="(ProjectManagement.Core.Enums.WorkItemStatus)" line-rate="1" branch-rate="1" complexity="27">
+              <lines>
+                <line number="84" hits="13" branch="False" />
+                <line number="85" hits="13" branch="True" condition-coverage="100% (27/27)">
+                  <conditions>
+                    <condition number="13" type="switch" coverage="100%" />
+                    <condition number="46" type="jump" coverage="100%" />
+                    <condition number="58" type="jump" coverage="100%" />
+                    <condition number="70" type="jump" coverage="100%" />
+                    <condition number="82" type="jump" coverage="100%" />
+                    <condition number="93" type="jump" coverage="100%" />
+                    <condition number="52" type="jump" coverage="100%" />
+                    <condition number="64" type="jump" coverage="100%" />
+                    <condition number="76" type="jump" coverage="100%" />
+                    <condition number="88" type="jump" coverage="100%" />
+                    <condition number="99" type="jump" coverage="100%" />
+                  </conditions>
+                </line>
+                <line number="86" hits="13" branch="False" />
+                <line number="87" hits="1" branch="False" />
+                <line number="88" hits="1" branch="False" />
+                <line number="89" hits="1" branch="False" />
+                <line number="90" hits="1" branch="False" />
+                <line number="91" hits="1" branch="False" />
+                <line number="92" hits="1" branch="False" />
+                <line number="93" hits="1" branch="False" />
+                <line number="94" hits="1" branch="False" />
+                <line number="95" hits="1" branch="False" />
+                <line number="96" hits="1" branch="False" />
+                <line number="97" hits="3" branch="False" />
+                <line number="98" hits="13" branch="False" />
+                <line number="99" hits="13" branch="False" />
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="13" hits="29" branch="False" />
+            <line number="18" hits="49" branch="False" />
+            <line number="23" hits="49" branch="False" />
+            <line number="28" hits="1" branch="False" />
+            <line number="33" hits="31" branch="False" />
+            <line number="38" hits="57" branch="False" />
+            <line number="43" hits="18" branch="False" />
+            <line number="48" hits="25" branch="False" />
+            <line number="53" hits="43" branch="False" />
+            <line number="58" hits="26" branch="False" />
+            <line number="63" hits="3" branch="True" condition-coverage="100% (2/2)">
+              <conditions>
+                <condition number="6" type="jump" coverage="100%" />
+              </conditions>
+            </line>
+            <line number="68" hits="1" branch="False" />
+            <line number="74" hits="16" branch="False" />
+            <line number="75" hits="16" branch="False" />
+            <line number="76" hits="16" branch="False" />
+            <line number="77" hits="16" branch="False" />
+            <line number="78" hits="16" branch="False" />
+            <line number="84" hits="13" branch="False" />
+            <line number="85" hits="13" branch="True" condition-coverage="100% (27/27)">
+              <conditions>
+                <condition number="13" type="switch" coverage="100%" />
+                <condition number="46" type="jump" coverage="100%" />
+                <condition number="58" type="jump" coverage="100%" />
+                <condition number="70" type="jump" coverage="100%" />
+                <condition number="82" type="jump" coverage="100%" />
+                <condition number="93" type="jump" coverage="100%" />
+                <condition number="52" type="jump" coverage="100%" />
+                <condition number="64" type="jump" coverage="100%" />
+                <condition number="76" type="jump" coverage="100%" />
+                <condition number="88" type="jump" coverage="100%" />
+                <condition number="99" type="jump" coverage="100%" />
+              </conditions>
+            </line>
+            <line number="86" hits="13" branch="False" />
+            <line number="87" hits="1" branch="False" />
+            <line number="88" hits="1" branch="False" />
+            <line number="89" hits="1" branch="False" />
+            <line number="90" hits="1" branch="False" />
+            <line number="91" hits="1" branch="False" />
+            <line number="92" hits="1" branch="False" />
+            <line number="93" hits="1" branch="False" />
+            <line number="94" hits="1" branch="False" />
+            <line number="95" hits="1" branch="False" />
+            <line number="96" hits="1" branch="False" />
+            <line number="97" hits="3" branch="False" />
+            <line number="98" hits="13" branch="False" />
+            <line number="99" hits="13" branch="False" />
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>

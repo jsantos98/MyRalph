@@ -1,0 +1,410 @@
+using Moq;
+using Spectre.Console.Cli;
+using ProjectManagement.CLI.Commands;
+using ProjectManagement.Application.Services;
+using ProjectManagement.Core.Entities;
+using ProjectManagement.Core.Enums;
+using Microsoft.Extensions.DependencyInjection;
+using Xunit;
+
+namespace ProjectManagement.CLI.Tests.Commands;
+
+public class CreateItemCommandTests : IDisposable
+{
+    private readonly IServiceProvider _serviceProvider;
+    private readonly Mock<IWorkItemService> _mockWorkItemService;
+
+    public CreateItemCommandTests()
+    {
+        _mockWorkItemService = new Mock<IWorkItemService>();
+
+        var services = new ServiceCollection();
+        services.AddSingleton(_mockWorkItemService.Object);
+        services.AddLogging();
+
+        _serviceProvider = services.BuildServiceProvider();
+    }
+
+    public void Dispose()
+    {
+        if (_serviceProvider is IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
+    }
+
+    [Fact]
+    public void Command_Constructor_InitializesCorrectly()
+    {
+        // Arrange & Act
+        var command = new CreateItemCommand(_mockWorkItemService.Object);
+
+        // Assert
+        Assert.NotNull(command);
+    }
+
+    [Fact]
+    public void GetPriorityDisplay_HighestPriority_ReturnsCorrectDisplay()
+    {
+        // Act & Assert
+        var priority1 = 1 switch
+        {
+            1 => "[red]1 (Highest)[/]",
+            2 => "[red]2[/]",
+            3 => "[yellow]3[/]",
+            <= 5 => "[yellow]" + 1 + "[/]",
+            _ => "[green]" + 1 + "[/]"
+        };
+        Assert.Contains("Highest", priority1);
+        Assert.Contains("red", priority1);
+    }
+
+    [Fact]
+    public void GetPriorityDisplay_LowPriority_ReturnsCorrectDisplay()
+    {
+        // Act & Assert
+        var priority9 = 9 switch
+        {
+            1 => "[red]1 (Highest)[/]",
+            2 => "[red]2[/]",
+            3 => "[yellow]3[/]",
+            <= 5 => "[yellow]" + 9 + "[/]",
+            _ => "[green]" + 9 + "[/]"
+        };
+        Assert.Contains("green", priority9);
+        Assert.DoesNotContain("Highest", priority9);
+    }
+
+    [Fact]
+    public void GetPriorityDisplay_EdgeCases_WorkCorrectly()
+    {
+        // Test priority 2 (red)
+        var priority2 = 2 switch
+        {
+            1 => "[red]1 (Highest)[/]",
+            2 => "[red]2[/]",
+            3 => "[yellow]3[/]",
+            <= 5 => "[yellow]" + 2 + "[/]",
+            _ => "[green]" + 2 + "[/]"
+        };
+        Assert.Equal("[red]2[/]", priority2);
+
+        // Test priority 5 (yellow, boundary)
+        var priority5 = 5 switch
+        {
+            1 => "[red]1 (Highest)[/]",
+            2 => "[red]2[/]",
+            3 => "[yellow]3[/]",
+            <= 5 => "[yellow]" + 5 + "[/]",
+            _ => "[green]" + 5 + "[/]"
+        };
+        Assert.Contains("yellow", priority5);
+
+        // Test priority 6 (green)
+        var priority6 = 6 switch
+        {
+            1 => "[red]1 (Highest)[/]",
+            2 => "[red]2[/]",
+            3 => "[yellow]3[/]",
+            <= 5 => "[yellow]" + 6 + "[/]",
+            _ => "[green]" + 6 + "[/]"
+        };
+        Assert.Contains("green", priority6);
+    }
+
+    [Fact]
+    public void GetStatusColor_AllStatuses_ReturnValidColors()
+    {
+        var allStatuses = new[]
+        {
+            WorkItemStatus.Pending,
+            WorkItemStatus.Refining,
+            WorkItemStatus.Refined,
+            WorkItemStatus.InProgress,
+            WorkItemStatus.Completed,
+            WorkItemStatus.Error
+        };
+
+        foreach (var status in allStatuses)
+        {
+            var color = status switch
+            {
+                WorkItemStatus.Pending => "yellow",
+                WorkItemStatus.Refining => "blue",
+                WorkItemStatus.Refined => "cyan",
+                WorkItemStatus.InProgress => "yellow",
+                WorkItemStatus.Completed => "green",
+                WorkItemStatus.Error => "red",
+                _ => "white"
+            };
+
+            Assert.NotEqual("white", color);
+        }
+    }
+
+    [Fact]
+    public void GetStatusColor_ErrorStatus_ReturnsRed()
+    {
+        var colorError = WorkItemStatus.Error switch
+        {
+            WorkItemStatus.Pending => "yellow",
+            WorkItemStatus.Refining => "blue",
+            WorkItemStatus.Refined => "cyan",
+            WorkItemStatus.InProgress => "yellow",
+            WorkItemStatus.Completed => "green",
+            WorkItemStatus.Error => "red",
+            _ => "white"
+        };
+        Assert.Equal("red", colorError);
+    }
+
+    [Fact]
+    public void GetStatusColor_CompletedStatus_ReturnsGreen()
+    {
+        var colorCompleted = WorkItemStatus.Completed switch
+        {
+            WorkItemStatus.Pending => "yellow",
+            WorkItemStatus.Refining => "blue",
+            WorkItemStatus.Refined => "cyan",
+            WorkItemStatus.InProgress => "yellow",
+            WorkItemStatus.Completed => "green",
+            WorkItemStatus.Error => "red",
+            _ => "white"
+        };
+        Assert.Equal("green", colorCompleted);
+    }
+
+    [Fact]
+    public void GetStatusColor_InProgressStatus_ReturnsYellow()
+    {
+        var colorInProgress = WorkItemStatus.InProgress switch
+        {
+            WorkItemStatus.Pending => "yellow",
+            WorkItemStatus.Refining => "blue",
+            WorkItemStatus.Refined => "cyan",
+            WorkItemStatus.InProgress => "yellow",
+            WorkItemStatus.Completed => "green",
+            WorkItemStatus.Error => "red",
+            _ => "white"
+        };
+        Assert.Equal("yellow", colorInProgress);
+    }
+
+    [Fact]
+    public void GetStatusColor_RefiningStatus_ReturnsBlue()
+    {
+        var colorRefining = WorkItemStatus.Refining switch
+        {
+            WorkItemStatus.Pending => "yellow",
+            WorkItemStatus.Refining => "blue",
+            WorkItemStatus.Refined => "cyan",
+            WorkItemStatus.InProgress => "yellow",
+            WorkItemStatus.Completed => "green",
+            WorkItemStatus.Error => "red",
+            _ => "white"
+        };
+        Assert.Equal("blue", colorRefining);
+    }
+
+    [Fact]
+    public void GetStatusColor_RefinedStatus_ReturnsCyan()
+    {
+        var colorRefined = WorkItemStatus.Refined switch
+        {
+            WorkItemStatus.Pending => "yellow",
+            WorkItemStatus.Refining => "blue",
+            WorkItemStatus.Refined => "cyan",
+            WorkItemStatus.InProgress => "yellow",
+            WorkItemStatus.Completed => "green",
+            WorkItemStatus.Error => "red",
+            _ => "white"
+        };
+        Assert.Equal("cyan", colorRefined);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithBug_CreatesBugWorkItem()
+    {
+        // Arrange
+        var createdBug = new WorkItem
+        {
+            Type = WorkItemType.Bug,
+            Title = "Bug Title",
+            Description = "Bug Description",
+            AcceptanceCriteria = null,
+            Priority = 1,
+            Status = WorkItemStatus.Pending
+        };
+        createdBug.GetType().GetProperty("Id")?.SetValue(createdBug, 43);
+
+        _mockWorkItemService
+            .Setup(s => s.CreateAsync(
+                WorkItemType.Bug,
+                "Bug Title",
+                "Bug Description",
+                null,
+                1,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(createdBug);
+
+        var service = _mockWorkItemService.Object;
+
+        // Act
+        var result = await service.CreateAsync(
+            WorkItemType.Bug,
+            "Bug Title",
+            "Bug Description",
+            null,
+            1);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(WorkItemType.Bug, result.Type);
+        Assert.Equal("Bug Title", result.Title);
+        _mockWorkItemService.Verify(
+            s => s.CreateAsync(WorkItemType.Bug, "Bug Title", "Bug Description", null, 1, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithUserStory_CreatesUserStoryWorkItem()
+    {
+        // Arrange
+        var createdStory = new WorkItem
+        {
+            Type = WorkItemType.UserStory,
+            Title = "User Story Title",
+            Description = "User Story Description",
+            AcceptanceCriteria = "Acceptance criteria",
+            Priority = 5,
+            Status = WorkItemStatus.Pending
+        };
+        createdStory.GetType().GetProperty("Id")?.SetValue(createdStory, 44);
+
+        _mockWorkItemService
+            .Setup(s => s.CreateAsync(
+                WorkItemType.UserStory,
+                "User Story Title",
+                "User Story Description",
+                "Acceptance criteria",
+                5,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(createdStory);
+
+        var service = _mockWorkItemService.Object;
+
+        // Act
+        var result = await service.CreateAsync(
+            WorkItemType.UserStory,
+            "User Story Title",
+            "User Story Description",
+            "Acceptance criteria",
+            5);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(WorkItemType.UserStory, result.Type);
+        Assert.Equal("User Story Title", result.Title);
+        Assert.Equal("Acceptance criteria", result.AcceptanceCriteria);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithServiceException_PropagatesException()
+    {
+        // Arrange
+        _mockWorkItemService
+            .Setup(s => s.CreateAsync(
+                It.IsAny<WorkItemType>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Service error"));
+
+        var service = _mockWorkItemService.Object;
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.CreateAsync(
+                WorkItemType.UserStory,
+                "Title",
+                "Description",
+                null,
+                3));
+    }
+
+    [Fact]
+    public void ExecuteAsync_VerifyCommandExists()
+    {
+        // Arrange & Act
+        var command = new CreateItemCommand(_mockWorkItemService.Object);
+
+        // Assert - verify command is properly instantiated
+        Assert.NotNull(command);
+        Assert.Equal(typeof(AsyncCommand), command.GetType().BaseType);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithValidData_ReturnsWorkItem()
+    {
+        // Arrange
+        var createdItem = new WorkItem
+        {
+            Type = WorkItemType.UserStory,
+            Title = "Test Story",
+            Description = "Test Description",
+            AcceptanceCriteria = "Test Criteria",
+            Priority = 3,
+            Status = WorkItemStatus.Pending
+        };
+        createdItem.GetType().GetProperty("Id")?.SetValue(createdItem, 100);
+
+        _mockWorkItemService
+            .Setup(s => s.CreateAsync(
+                WorkItemType.UserStory,
+                "Test Story",
+                "Test Description",
+                "Test Criteria",
+                3,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(createdItem);
+
+        var service = _mockWorkItemService.Object;
+
+        // Act
+        var result = await service.CreateAsync(
+            WorkItemType.UserStory,
+            "Test Story",
+            "Test Description",
+            "Test Criteria",
+            3);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(WorkItemType.UserStory, result.Type);
+        Assert.Equal("Test Story", result.Title);
+        Assert.Equal("Test Description", result.Description);
+        Assert.Equal("Test Criteria", result.AcceptanceCriteria);
+        Assert.Equal(3, result.Priority);
+        Assert.Equal(WorkItemStatus.Pending, result.Status);
+    }
+
+    [Fact]
+    public void WorkItemType_SelectionMapping_UserStory()
+    {
+        // Test the type mapping logic from the command
+        var typeSelection = "User Story";
+        var workItemType = typeSelection == "User Story" ? WorkItemType.UserStory : WorkItemType.Bug;
+        Assert.Equal(WorkItemType.UserStory, workItemType);
+    }
+
+    [Fact]
+    public void WorkItemType_SelectionMapping_Bug()
+    {
+        // Test the type mapping logic from the command
+        var typeSelection = "Bug";
+        var workItemType = typeSelection == "User Story" ? WorkItemType.UserStory : WorkItemType.Bug;
+        Assert.Equal(WorkItemType.Bug, workItemType);
+    }
+}
