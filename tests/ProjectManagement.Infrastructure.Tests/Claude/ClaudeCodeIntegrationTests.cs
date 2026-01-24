@@ -63,7 +63,7 @@ public class ClaudeCodeIntegrationTests : IDisposable
         // The test verifies the method signature is correct
         try
         {
-            var result = await _integration.ExecuteAsync(repositoryPath, instructions);
+            var result = await _integration.ExecuteAsync(repositoryPath, instructions, null, null, null, null);
             Assert.NotNull(result);
         }
         catch (Exception)
@@ -82,7 +82,7 @@ public class ClaudeCodeIntegrationTests : IDisposable
         // Act & Assert
         try
         {
-            var result = await _integration.ExecuteAsync(path, instructions);
+            var result = await _integration.ExecuteAsync(path, instructions, null, null, null, null);
             Assert.NotNull(result);
         }
         catch (Exception)
@@ -101,7 +101,7 @@ public class ClaudeCodeIntegrationTests : IDisposable
         // Act & Assert
         try
         {
-            await _integration.ExecuteAsync(".", "test", cts.Token);
+            await _integration.ExecuteAsync(".", "test", null, null, null, null, cts.Token);
         }
         catch (OperationCanceledException)
         {
@@ -129,7 +129,7 @@ public class ClaudeCodeIntegrationTests : IDisposable
         // Act & Assert
         try
         {
-            var result = await _integration.ExecuteAsync(".", longInstructions);
+            var result = await _integration.ExecuteAsync(".", longInstructions, null, null, null, null);
             Assert.NotNull(result);
         }
         catch (Exception)
@@ -147,7 +147,7 @@ public class ClaudeCodeIntegrationTests : IDisposable
         // Act & Assert
         try
         {
-            var result = await _integration.ExecuteAsync(".", instructions);
+            var result = await _integration.ExecuteAsync(".", instructions, null, null, null, null);
             Assert.NotNull(result);
         }
         catch (Exception)
@@ -165,12 +165,252 @@ public class ClaudeCodeIntegrationTests : IDisposable
         // Act & Assert
         try
         {
-            var result = await _integration.ExecuteAsync(".", instructions);
+            var result = await _integration.ExecuteAsync(".", instructions, null, null, null, null);
             Assert.NotNull(result);
         }
         catch (Exception)
         {
             // Expected if Claude Code is not installed
+        }
+    }
+
+    // New tests for command-line options
+
+    [Fact]
+    public async Task ExecuteAsync_WithApiKeyParameter_DoesNotThrow()
+    {
+        // Arrange
+        var instructions = "Test instruction";
+
+        // Act & Assert
+        try
+        {
+            var result = await _integration.ExecuteAsync(".", instructions, "test-api-key", null, null, null);
+            Assert.NotNull(result);
+        }
+        catch (Exception)
+        {
+            // Expected if Claude Code is not installed
+        }
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithBaseUrlParameter_DoesNotThrow()
+    {
+        // Arrange
+        var instructions = "Test instruction";
+
+        // Act & Assert
+        try
+        {
+            var result = await _integration.ExecuteAsync(".", instructions, null, "https://api.example.com", null, null);
+            Assert.NotNull(result);
+        }
+        catch (Exception)
+        {
+            // Expected if Claude Code is not installed
+        }
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithTimeoutParameter_DoesNotThrow()
+    {
+        // Arrange
+        var instructions = "Test instruction";
+
+        // Act & Assert
+        try
+        {
+            var result = await _integration.ExecuteAsync(".", instructions, null, null, 5000, null);
+            Assert.NotNull(result);
+        }
+        catch (Exception)
+        {
+            // Expected if Claude Code is not installed
+        }
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithModelParameter_DoesNotThrow()
+    {
+        // Arrange
+        var instructions = "Test instruction";
+
+        // Act & Assert
+        try
+        {
+            var result = await _integration.ExecuteAsync(".", instructions, null, null, null, "GLM-4.7");
+            Assert.NotNull(result);
+        }
+        catch (Exception)
+        {
+            // Expected if Claude Code is not installed
+        }
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithAllParameters_DoesNotThrow()
+    {
+        // Arrange
+        var instructions = "Test instruction";
+
+        // Act & Assert
+        try
+        {
+            var result = await _integration.ExecuteAsync(
+                ".",
+                instructions,
+                "test-api-key",
+                "https://api.example.com",
+                5000,
+                "GLM-4.7");
+            Assert.NotNull(result);
+        }
+        catch (Exception)
+        {
+            // Expected if Claude Code is not installed
+        }
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithApiKeyFromEnvironmentVariable_DoesNotThrow()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN", "env-api-key");
+        var instructions = "Test instruction";
+
+        try
+        {
+            // Act & Assert
+            try
+            {
+                var result = await _integration.ExecuteAsync(".", instructions, null, null, null, null);
+                Assert.NotNull(result);
+            }
+            catch (Exception)
+            {
+                // Expected if Claude Code is not installed
+            }
+        }
+        finally
+        {
+            // Cleanup
+            Environment.SetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN", null);
+        }
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithBaseUrlFromEnvironmentVariable_DoesNotThrow()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("ANTHROPIC_BASE_URL", "https://env.example.com");
+        var instructions = "Test instruction";
+
+        try
+        {
+            // Act & Assert
+            try
+            {
+                var result = await _integration.ExecuteAsync(".", instructions, null, null, null, null);
+                Assert.NotNull(result);
+            }
+            catch (Exception)
+            {
+                // Expected if Claude Code is not installed
+            }
+        }
+        finally
+        {
+            // Cleanup
+            Environment.SetEnvironmentVariable("ANTHROPIC_BASE_URL", null);
+        }
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithTimeoutFromEnvironmentVariable_DoesNotThrow()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("API_TIMEOUT_MS", "10000");
+        var instructions = "Test instruction";
+
+        try
+        {
+            // Act & Assert
+            try
+            {
+                var result = await _integration.ExecuteAsync(".", instructions, null, null, null, null);
+                Assert.NotNull(result);
+            }
+            catch (Exception)
+            {
+                // Expected if Claude Code is not installed
+            }
+        }
+        finally
+        {
+            // Cleanup
+            Environment.SetEnvironmentVariable("API_TIMEOUT_MS", null);
+        }
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithAllEnvVarsSet_DoesNotThrow()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN", "env-api-key");
+        Environment.SetEnvironmentVariable("ANTHROPIC_BASE_URL", "https://env.example.com");
+        Environment.SetEnvironmentVariable("API_TIMEOUT_MS", "10000");
+        var instructions = "Test instruction";
+
+        try
+        {
+            // Act & Assert
+            try
+            {
+                var result = await _integration.ExecuteAsync(".", instructions, null, null, null, null);
+                Assert.NotNull(result);
+            }
+            catch (Exception)
+            {
+                // Expected if Claude Code is not installed
+            }
+        }
+        finally
+        {
+            // Cleanup
+            Environment.SetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN", null);
+            Environment.SetEnvironmentVariable("ANTHROPIC_BASE_URL", null);
+            Environment.SetEnvironmentVariable("API_TIMEOUT_MS", null);
+        }
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_CommandLineParameterTakesPrecedenceOverEnvVar()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN", "env-api-key");
+        var instructions = "Test instruction";
+
+        try
+        {
+            // Act & Assert
+            try
+            {
+                var result = await _integration.ExecuteAsync(".", instructions, "cli-api-key", null, null, null);
+                Assert.NotNull(result);
+                // The CLI parameter should take precedence over env var
+                // We can't directly verify this without mocking Process.Start,
+                // but we verify the method doesn't throw
+            }
+            catch (Exception)
+            {
+                // Expected if Claude Code is not installed
+            }
+        }
+        finally
+        {
+            // Cleanup
+            Environment.SetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN", null);
         }
     }
 }

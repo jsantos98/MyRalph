@@ -39,6 +39,10 @@ public class ImplementCommand : AsyncCommand<ImplementCommand.Settings>
                         storyId,
                         mainBranch,
                         repositoryPath,
+                        settings.GetApiKey(),
+                        settings.GetBaseUrl(),
+                        settings.GetTimeout(),
+                        settings.GetModel(),
                         cancellationToken);
 
                     task.Value = 100;
@@ -92,7 +96,7 @@ public class ImplementCommand : AsyncCommand<ImplementCommand.Settings>
         return 0;
     }
 
-    public class Settings : CommandSettings
+    public class Settings : ClaudeCommandSettings
     {
         [CommandArgument(0, "<STORY_ID>")]
         public required int StoryId { get; set; }

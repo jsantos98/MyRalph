@@ -131,12 +131,12 @@ public class CommandTests : IDisposable
     {
         // Arrange
         _mockRefinementService
-            .Setup(s => s.RefineWorkItemAsync(999, It.IsAny<CancellationToken>()))
+            .Setup(s => s.RefineWorkItemAsync(999, null, null, null, null, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Core.Exceptions.EntityNotFoundException(typeof(WorkItem), 999));
 
         var service = _serviceProvider.GetRequiredService<IRefinementService>();
 
         // Act & Assert
-        await Assert.ThrowsAsync<Core.Exceptions.EntityNotFoundException>(() => service.RefineWorkItemAsync(999));
+        await Assert.ThrowsAsync<Core.Exceptions.EntityNotFoundException>(() => service.RefineWorkItemAsync(999, null, null, null, null));
     }
 }

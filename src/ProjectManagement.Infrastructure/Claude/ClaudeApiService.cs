@@ -29,16 +29,30 @@ public class ClaudeApiService : IClaudeApiService
 
     public async Task<ClaudeRefinementResult> RefineWorkItemAsync(
         WorkItem workItem,
+        string? apiKey = null,
+        string? baseUrl = null,
+        int? timeoutMs = null,
+        string? model = null,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(_settings.ApiKey))
+        // Use provided API key or fall back to settings
+        var effectiveApiKey = apiKey ?? _settings.ApiKey ?? Environment.GetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN");
+        if (string.IsNullOrWhiteSpace(effectiveApiKey))
         {
             throw new ClaudeIntegrationException("Claude API key is not configured.");
         }
 
+        // Use provided model or fall back to settings
+        var effectiveModel = model ?? _settings.Model;
+
         try
         {
-            var client = new AnthropicClient(_settings.ApiKey);
+            AnthropicClient client;
+
+            // Note: Base URL configuration would require HttpClient custom configuration
+            // For now, we use the default client which reads from ANTHROPIC_BASE_URL env var
+            // The baseUrl parameter is kept for API compatibility but not used directly
+            client = new AnthropicClient(effectiveApiKey);
 
             var systemPrompt = BuildSystemPrompt();
             var userPrompt = BuildUserPrompt(workItem);
@@ -47,7 +61,7 @@ public class ClaudeApiService : IClaudeApiService
 
             var parameters = new MessageParameters()
             {
-                Model = _settings.Model,
+                Model = effectiveModel,
                 MaxTokens = _settings.MaxTokens,
                 System = new List<SystemMessage> { new SystemMessage(systemPrompt) },
                 Messages = new List<Message>()
@@ -57,7 +71,18 @@ public class ClaudeApiService : IClaudeApiService
                 Temperature = 0.3m
             };
 
-            var message = await client.Messages.GetClaudeMessageAsync(parameters, cancellationToken);
+            // Apply timeout if specified
+            MessageResponse message;
+            if (timeoutMs.HasValue)
+            {
+                using var cts = new CancellationTokenSource(timeoutMs.Value);
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cts.Token);
+                message = await client.Messages.GetClaudeMessageAsync(parameters, linkedCts.Token);
+            }
+            else
+            {
+                message = await client.Messages.GetClaudeMessageAsync(parameters, cancellationToken);
+            }
 
             // Get text content from the response
             string content = string.Empty;

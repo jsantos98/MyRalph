@@ -67,6 +67,10 @@ public class ImplementCommandTests : IDisposable
                 42,
                 "main",
                 It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<int?>(),
+                It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(result);
 
@@ -81,7 +85,7 @@ public class ImplementCommandTests : IDisposable
         // Assert
         Assert.Equal(0, returnValue);
         _mockImplementationService.Verify(
-            s => s.ImplementAsync(42, "main", It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            s => s.ImplementAsync(42, "main", It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -115,6 +119,10 @@ public class ImplementCommandTests : IDisposable
                 42,
                 "main",
                 It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<int?>(),
+                It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(result);
 
@@ -139,6 +147,10 @@ public class ImplementCommandTests : IDisposable
                 42,
                 "main",
                 It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<int?>(),
+                It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Service error"));
 
@@ -164,6 +176,10 @@ public class ImplementCommandTests : IDisposable
                 42,
                 "main",
                 It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<int?>(),
+                It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Outer error", innerException));
 
@@ -209,6 +225,10 @@ public class ImplementCommandTests : IDisposable
                 42,
                 "main",
                 It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<int?>(),
+                It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(result);
 
@@ -223,7 +243,7 @@ public class ImplementCommandTests : IDisposable
         // Assert
         Assert.Equal(0, returnValue);
         _mockImplementationService.Verify(
-            s => s.ImplementAsync(42, "main", It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            s => s.ImplementAsync(42, "main", It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -257,6 +277,10 @@ public class ImplementCommandTests : IDisposable
                 42,
                 "develop",
                 It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<int?>(),
+                It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(result);
 
@@ -271,7 +295,7 @@ public class ImplementCommandTests : IDisposable
         // Assert
         Assert.Equal(0, returnValue);
         _mockImplementationService.Verify(
-            s => s.ImplementAsync(42, "develop", It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            s => s.ImplementAsync(42, "develop", It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -305,6 +329,10 @@ public class ImplementCommandTests : IDisposable
                 42,
                 "main",
                 It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<int?>(),
+                It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(result);
 
@@ -350,6 +378,10 @@ public class ImplementCommandTests : IDisposable
                 42,
                 "main",
                 It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<int?>(),
+                It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(result);
 
@@ -408,6 +440,10 @@ public class ImplementCommandTests : IDisposable
                 42,
                 "main",
                 currentDir,
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<int?>(),
+                It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(result);
 
@@ -421,7 +457,7 @@ public class ImplementCommandTests : IDisposable
 
         // Assert
         _mockImplementationService.Verify(
-            s => s.ImplementAsync(42, "main", currentDir, It.IsAny<CancellationToken>()),
+            s => s.ImplementAsync(42, "main", currentDir, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -438,6 +474,10 @@ public class ImplementCommandTests : IDisposable
                 42,
                 "main",
                 It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<int?>(),
+                It.IsAny<string?>(),
                 cancellationToken))
             .ThrowsAsync(new OperationCanceledException());
 
@@ -448,5 +488,282 @@ public class ImplementCommandTests : IDisposable
         // Act & Assert
         var result = await command.ExecuteAsync(context, settings, cancellationToken);
         Assert.Equal(0, result); // Command returns 0 even on cancellation (progress handles it)
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithApiKey_PassesApiKeyToService()
+    {
+        // Arrange
+        var story = new DeveloperStory
+        {
+            WorkItemId = 1,
+            StoryType = DeveloperStoryType.Implementation,
+            Title = "Test Story",
+            Description = "D",
+            Instructions = "I",
+            Status = DeveloperStoryStatus.Ready,
+            Priority = 1
+        };
+        story.GetType().GetProperty("Id")?.SetValue(story, 42);
+
+        var result = new ImplementationResult
+        {
+            Success = true,
+            Duration = TimeSpan.FromMinutes(1),
+            Output = "Done",
+            Error = null,
+            Story = story
+        };
+
+        _mockImplementationService
+            .Setup(s => s.ImplementAsync(
+                42,
+                "main",
+                It.IsAny<string>(),
+                "test-api-key",
+                null,
+                null,
+                null,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(result);
+
+        var command = new ImplementCommand(_mockImplementationService.Object);
+        var settings = new ImplementCommand.Settings { StoryId = 42, ApiKey = "test-api-key" };
+        var context = TestCommandContextFactory.Create("implement", new[] { "42" });
+        var cancellationToken = CancellationToken.None;
+
+        // Act
+        var returnValue = await command.ExecuteAsync(context, settings, cancellationToken);
+
+        // Assert
+        Assert.Equal(0, returnValue);
+        _mockImplementationService.Verify(
+            s => s.ImplementAsync(42, "main", It.IsAny<string>(), "test-api-key", null, null, null, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithBaseUrl_PassesBaseUrlToService()
+    {
+        // Arrange
+        var story = new DeveloperStory
+        {
+            WorkItemId = 1,
+            StoryType = DeveloperStoryType.Implementation,
+            Title = "Test Story",
+            Description = "D",
+            Instructions = "I",
+            Status = DeveloperStoryStatus.Ready,
+            Priority = 1
+        };
+        story.GetType().GetProperty("Id")?.SetValue(story, 42);
+
+        var result = new ImplementationResult
+        {
+            Success = true,
+            Duration = TimeSpan.FromMinutes(1),
+            Output = "Done",
+            Error = null,
+            Story = story
+        };
+
+        _mockImplementationService
+            .Setup(s => s.ImplementAsync(
+                42,
+                "main",
+                It.IsAny<string>(),
+                null,
+                "https://api.example.com",
+                null,
+                null,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(result);
+
+        var command = new ImplementCommand(_mockImplementationService.Object);
+        var settings = new ImplementCommand.Settings { StoryId = 42, BaseUrl = "https://api.example.com" };
+        var context = TestCommandContextFactory.Create("implement", new[] { "42" });
+        var cancellationToken = CancellationToken.None;
+
+        // Act
+        var returnValue = await command.ExecuteAsync(context, settings, cancellationToken);
+
+        // Assert
+        Assert.Equal(0, returnValue);
+        _mockImplementationService.Verify(
+            s => s.ImplementAsync(42, "main", It.IsAny<string>(), null, "https://api.example.com", null, null, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithTimeout_PassesTimeoutToService()
+    {
+        // Arrange
+        var story = new DeveloperStory
+        {
+            WorkItemId = 1,
+            StoryType = DeveloperStoryType.Implementation,
+            Title = "Test Story",
+            Description = "D",
+            Instructions = "I",
+            Status = DeveloperStoryStatus.Ready,
+            Priority = 1
+        };
+        story.GetType().GetProperty("Id")?.SetValue(story, 42);
+
+        var result = new ImplementationResult
+        {
+            Success = true,
+            Duration = TimeSpan.FromMinutes(1),
+            Output = "Done",
+            Error = null,
+            Story = story
+        };
+
+        _mockImplementationService
+            .Setup(s => s.ImplementAsync(
+                42,
+                "main",
+                It.IsAny<string>(),
+                null,
+                null,
+                5000,
+                null,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(result);
+
+        var command = new ImplementCommand(_mockImplementationService.Object);
+        var settings = new ImplementCommand.Settings { StoryId = 42, Timeout = 5000 };
+        var context = TestCommandContextFactory.Create("implement", new[] { "42" });
+        var cancellationToken = CancellationToken.None;
+
+        // Act
+        var returnValue = await command.ExecuteAsync(context, settings, cancellationToken);
+
+        // Assert
+        Assert.Equal(0, returnValue);
+        _mockImplementationService.Verify(
+            s => s.ImplementAsync(42, "main", It.IsAny<string>(), null, null, 5000, null, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithModel_PassesModelToService()
+    {
+        // Arrange
+        var story = new DeveloperStory
+        {
+            WorkItemId = 1,
+            StoryType = DeveloperStoryType.Implementation,
+            Title = "Test Story",
+            Description = "D",
+            Instructions = "I",
+            Status = DeveloperStoryStatus.Ready,
+            Priority = 1
+        };
+        story.GetType().GetProperty("Id")?.SetValue(story, 42);
+
+        var result = new ImplementationResult
+        {
+            Success = true,
+            Duration = TimeSpan.FromMinutes(1),
+            Output = "Done",
+            Error = null,
+            Story = story
+        };
+
+        _mockImplementationService
+            .Setup(s => s.ImplementAsync(
+                42,
+                "main",
+                It.IsAny<string>(),
+                null,
+                null,
+                null,
+                "GLM-4.7",
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(result);
+
+        var command = new ImplementCommand(_mockImplementationService.Object);
+        var settings = new ImplementCommand.Settings { StoryId = 42, Model = "GLM-4.7" };
+        var context = TestCommandContextFactory.Create("implement", new[] { "42" });
+        var cancellationToken = CancellationToken.None;
+
+        // Act
+        var returnValue = await command.ExecuteAsync(context, settings, cancellationToken);
+
+        // Assert
+        Assert.Equal(0, returnValue);
+        _mockImplementationService.Verify(
+            s => s.ImplementAsync(42, "main", It.IsAny<string>(), null, null, null, "GLM-4.7", It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithAllOptions_PassesAllOptionsToService()
+    {
+        // Arrange
+        var story = new DeveloperStory
+        {
+            WorkItemId = 1,
+            StoryType = DeveloperStoryType.Implementation,
+            Title = "Test Story",
+            Description = "D",
+            Instructions = "I",
+            Status = DeveloperStoryStatus.Ready,
+            Priority = 1
+        };
+        story.GetType().GetProperty("Id")?.SetValue(story, 42);
+
+        var result = new ImplementationResult
+        {
+            Success = true,
+            Duration = TimeSpan.FromMinutes(1),
+            Output = "Done",
+            Error = null,
+            Story = story
+        };
+
+        _mockImplementationService
+            .Setup(s => s.ImplementAsync(
+                42,
+                "main",
+                It.IsAny<string>(),
+                "test-api-key",
+                "https://api.example.com",
+                5000,
+                "GLM-4.7",
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(result);
+
+        var command = new ImplementCommand(_mockImplementationService.Object);
+        var settings = new ImplementCommand.Settings
+        {
+            StoryId = 42,
+            ApiKey = "test-api-key",
+            BaseUrl = "https://api.example.com",
+            Timeout = 5000,
+            Model = "GLM-4.7"
+        };
+        var context = TestCommandContextFactory.Create("implement", new[] { "42" });
+        var cancellationToken = CancellationToken.None;
+
+        // Act
+        var returnValue = await command.ExecuteAsync(context, settings, cancellationToken);
+
+        // Assert
+        Assert.Equal(0, returnValue);
+        _mockImplementationService.Verify(
+            s => s.ImplementAsync(42, "main", It.IsAny<string>(), "test-api-key", "https://api.example.com", 5000, "GLM-4.7", It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public void Settings_InheritsFromClaudeCommandSettings()
+    {
+        // Arrange & Act
+        var settings = new ImplementCommand.Settings { StoryId = 42 };
+
+        // Assert
+        Assert.IsAssignableFrom<ClaudeCommandSettings>(settings);
     }
 }

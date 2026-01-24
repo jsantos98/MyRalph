@@ -90,7 +90,7 @@ public class RefineItemCommandTests : IDisposable
             .Setup(s => s.GetWithDeveloperStoriesAsync(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(workItem);
         _mockRefinementService
-            .Setup(s => s.RefineWorkItemAsync(1, It.IsAny<CancellationToken>()))
+            .Setup(s => s.RefineWorkItemAsync(1, null, null, null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(refinementResult);
 
         var command = new RefineItemCommand(_mockRefinementService.Object, _mockWorkItemService.Object);
@@ -104,7 +104,224 @@ public class RefineItemCommandTests : IDisposable
         // Assert
         Assert.Equal(0, result);
         _mockWorkItemService.Verify(s => s.GetWithDeveloperStoriesAsync(1, It.IsAny<CancellationToken>()), Times.Once);
-        _mockRefinementService.Verify(s => s.RefineWorkItemAsync(1, It.IsAny<CancellationToken>()), Times.Once);
+        _mockRefinementService.Verify(s => s.RefineWorkItemAsync(1, null, null, null, null, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithApiKey_PassesApiKeyToService()
+    {
+        // Arrange
+        var workItem = new WorkItem
+        {
+            Type = WorkItemType.UserStory,
+            Title = "Test Story",
+            Description = "Test Description",
+            Status = WorkItemStatus.Pending,
+            Priority = 3
+        };
+        workItem.GetType().GetProperty("Id")?.SetValue(workItem, 1);
+
+        var refinementResult = new RefinementResult
+        {
+            WorkItem = workItem,
+            DeveloperStories = new List<DeveloperStory>(),
+            Dependencies = new List<DeveloperStoryDependency>(),
+            Analysis = null
+        };
+
+        _mockWorkItemService
+            .Setup(s => s.GetWithDeveloperStoriesAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(workItem);
+        _mockRefinementService
+            .Setup(s => s.RefineWorkItemAsync(1, "test-api-key", null, null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(refinementResult);
+
+        var command = new RefineItemCommand(_mockRefinementService.Object, _mockWorkItemService.Object);
+        var settings = new RefineItemCommand.Settings { Id = 1, ApiKey = "test-api-key" };
+        var context = TestCommandContextFactory.Create("refine", new[] { "1" });
+        var cancellationToken = CancellationToken.None;
+
+        // Act
+        var result = await command.ExecuteAsync(context, settings, cancellationToken);
+
+        // Assert
+        Assert.Equal(0, result);
+        _mockRefinementService.Verify(s => s.RefineWorkItemAsync(1, "test-api-key", null, null, null, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithBaseUrl_PassesBaseUrlToService()
+    {
+        // Arrange
+        var workItem = new WorkItem
+        {
+            Type = WorkItemType.UserStory,
+            Title = "Test Story",
+            Description = "Test Description",
+            Status = WorkItemStatus.Pending,
+            Priority = 3
+        };
+        workItem.GetType().GetProperty("Id")?.SetValue(workItem, 1);
+
+        var refinementResult = new RefinementResult
+        {
+            WorkItem = workItem,
+            DeveloperStories = new List<DeveloperStory>(),
+            Dependencies = new List<DeveloperStoryDependency>(),
+            Analysis = null
+        };
+
+        _mockWorkItemService
+            .Setup(s => s.GetWithDeveloperStoriesAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(workItem);
+        _mockRefinementService
+            .Setup(s => s.RefineWorkItemAsync(1, null, "https://api.example.com", null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(refinementResult);
+
+        var command = new RefineItemCommand(_mockRefinementService.Object, _mockWorkItemService.Object);
+        var settings = new RefineItemCommand.Settings { Id = 1, BaseUrl = "https://api.example.com" };
+        var context = TestCommandContextFactory.Create("refine", new[] { "1" });
+        var cancellationToken = CancellationToken.None;
+
+        // Act
+        var result = await command.ExecuteAsync(context, settings, cancellationToken);
+
+        // Assert
+        Assert.Equal(0, result);
+        _mockRefinementService.Verify(s => s.RefineWorkItemAsync(1, null, "https://api.example.com", null, null, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithTimeout_PassesTimeoutToService()
+    {
+        // Arrange
+        var workItem = new WorkItem
+        {
+            Type = WorkItemType.UserStory,
+            Title = "Test Story",
+            Description = "Test Description",
+            Status = WorkItemStatus.Pending,
+            Priority = 3
+        };
+        workItem.GetType().GetProperty("Id")?.SetValue(workItem, 1);
+
+        var refinementResult = new RefinementResult
+        {
+            WorkItem = workItem,
+            DeveloperStories = new List<DeveloperStory>(),
+            Dependencies = new List<DeveloperStoryDependency>(),
+            Analysis = null
+        };
+
+        _mockWorkItemService
+            .Setup(s => s.GetWithDeveloperStoriesAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(workItem);
+        _mockRefinementService
+            .Setup(s => s.RefineWorkItemAsync(1, null, null, 5000, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(refinementResult);
+
+        var command = new RefineItemCommand(_mockRefinementService.Object, _mockWorkItemService.Object);
+        var settings = new RefineItemCommand.Settings { Id = 1, Timeout = 5000 };
+        var context = TestCommandContextFactory.Create("refine", new[] { "1" });
+        var cancellationToken = CancellationToken.None;
+
+        // Act
+        var result = await command.ExecuteAsync(context, settings, cancellationToken);
+
+        // Assert
+        Assert.Equal(0, result);
+        _mockRefinementService.Verify(s => s.RefineWorkItemAsync(1, null, null, 5000, null, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithModel_PassesModelToService()
+    {
+        // Arrange
+        var workItem = new WorkItem
+        {
+            Type = WorkItemType.UserStory,
+            Title = "Test Story",
+            Description = "Test Description",
+            Status = WorkItemStatus.Pending,
+            Priority = 3
+        };
+        workItem.GetType().GetProperty("Id")?.SetValue(workItem, 1);
+
+        var refinementResult = new RefinementResult
+        {
+            WorkItem = workItem,
+            DeveloperStories = new List<DeveloperStory>(),
+            Dependencies = new List<DeveloperStoryDependency>(),
+            Analysis = null
+        };
+
+        _mockWorkItemService
+            .Setup(s => s.GetWithDeveloperStoriesAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(workItem);
+        _mockRefinementService
+            .Setup(s => s.RefineWorkItemAsync(1, null, null, null, "GLM-4.7", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(refinementResult);
+
+        var command = new RefineItemCommand(_mockRefinementService.Object, _mockWorkItemService.Object);
+        var settings = new RefineItemCommand.Settings { Id = 1, Model = "GLM-4.7" };
+        var context = TestCommandContextFactory.Create("refine", new[] { "1" });
+        var cancellationToken = CancellationToken.None;
+
+        // Act
+        var result = await command.ExecuteAsync(context, settings, cancellationToken);
+
+        // Assert
+        Assert.Equal(0, result);
+        _mockRefinementService.Verify(s => s.RefineWorkItemAsync(1, null, null, null, "GLM-4.7", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithAllOptions_PassesAllOptionsToService()
+    {
+        // Arrange
+        var workItem = new WorkItem
+        {
+            Type = WorkItemType.UserStory,
+            Title = "Test Story",
+            Description = "Test Description",
+            Status = WorkItemStatus.Pending,
+            Priority = 3
+        };
+        workItem.GetType().GetProperty("Id")?.SetValue(workItem, 1);
+
+        var refinementResult = new RefinementResult
+        {
+            WorkItem = workItem,
+            DeveloperStories = new List<DeveloperStory>(),
+            Dependencies = new List<DeveloperStoryDependency>(),
+            Analysis = null
+        };
+
+        _mockWorkItemService
+            .Setup(s => s.GetWithDeveloperStoriesAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(workItem);
+        _mockRefinementService
+            .Setup(s => s.RefineWorkItemAsync(1, "test-api-key", "https://api.example.com", 5000, "GLM-4.7", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(refinementResult);
+
+        var command = new RefineItemCommand(_mockRefinementService.Object, _mockWorkItemService.Object);
+        var settings = new RefineItemCommand.Settings
+        {
+            Id = 1,
+            ApiKey = "test-api-key",
+            BaseUrl = "https://api.example.com",
+            Timeout = 5000,
+            Model = "GLM-4.7"
+        };
+        var context = TestCommandContextFactory.Create("refine", new[] { "1" });
+        var cancellationToken = CancellationToken.None;
+
+        // Act
+        var result = await command.ExecuteAsync(context, settings, cancellationToken);
+
+        // Assert
+        Assert.Equal(0, result);
+        _mockRefinementService.Verify(s => s.RefineWorkItemAsync(1, "test-api-key", "https://api.example.com", 5000, "GLM-4.7", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -125,7 +342,7 @@ public class RefineItemCommandTests : IDisposable
 
         // Assert
         Assert.Equal(1, result);
-        _mockRefinementService.Verify(s => s.RefineWorkItemAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _mockRefinementService.Verify(s => s.RefineWorkItemAsync(It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -146,7 +363,7 @@ public class RefineItemCommandTests : IDisposable
             .Setup(s => s.GetWithDeveloperStoriesAsync(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(workItem);
         _mockRefinementService
-            .Setup(s => s.RefineWorkItemAsync(1, It.IsAny<CancellationToken>()))
+            .Setup(s => s.RefineWorkItemAsync(1, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Claude API error"));
 
         var command = new RefineItemCommand(_mockRefinementService.Object, _mockWorkItemService.Object);
@@ -187,7 +404,7 @@ public class RefineItemCommandTests : IDisposable
             .Setup(s => s.GetWithDeveloperStoriesAsync(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(workItem);
         _mockRefinementService
-            .Setup(s => s.RefineWorkItemAsync(1, It.IsAny<CancellationToken>()))
+            .Setup(s => s.RefineWorkItemAsync(1, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(refinementResult);
 
         var command = new RefineItemCommand(_mockRefinementService.Object, _mockWorkItemService.Object);
@@ -258,7 +475,7 @@ public class RefineItemCommandTests : IDisposable
             .Setup(s => s.GetWithDeveloperStoriesAsync(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(workItem);
         _mockRefinementService
-            .Setup(s => s.RefineWorkItemAsync(1, It.IsAny<CancellationToken>()))
+            .Setup(s => s.RefineWorkItemAsync(1, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(refinementResult);
 
         var command = new RefineItemCommand(_mockRefinementService.Object, _mockWorkItemService.Object);
@@ -281,6 +498,16 @@ public class RefineItemCommandTests : IDisposable
 
         // Assert
         Assert.Equal(42, settings.Id);
+    }
+
+    [Fact]
+    public void Settings_InheritsFromClaudeCommandSettings()
+    {
+        // Arrange & Act
+        var settings = new RefineItemCommand.Settings { Id = 42 };
+
+        // Assert
+        Assert.IsAssignableFrom<ClaudeCommandSettings>(settings);
     }
 
     [Fact]

@@ -4,7 +4,8 @@
       "WebSearch",
       "Bash(dotnet:*)",
       "Bash(find:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(tree:*)"
     ]
   }
 }

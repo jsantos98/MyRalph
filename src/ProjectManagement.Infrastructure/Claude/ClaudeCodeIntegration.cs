@@ -49,12 +49,81 @@ public class ClaudeCodeIntegration : IClaudeCodeIntegration
     public async Task<ClaudeCodeResult> ExecuteAsync(
         string instruction,
         string workingDirectory,
+        string? apiKey = null,
+        string? baseUrl = null,
+        int? timeoutMs = null,
+        string? model = null,
         CancellationToken cancellationToken = default)
     {
+        // Build command line arguments
+        var arguments = new List<string>();
+
+        // Add API key if provided
+        if (!string.IsNullOrWhiteSpace(apiKey))
+        {
+            arguments.Add("--api-key");
+            arguments.Add(EscapeArgument(apiKey));
+        }
+        else
+        {
+            // Check environment variable as fallback
+            var envApiKey = Environment.GetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN");
+            if (!string.IsNullOrWhiteSpace(envApiKey))
+            {
+                arguments.Add("--api-key");
+                arguments.Add(EscapeArgument(envApiKey));
+            }
+        }
+
+        // Add base URL if provided
+        if (!string.IsNullOrWhiteSpace(baseUrl))
+        {
+            arguments.Add("--base-url");
+            arguments.Add(EscapeArgument(baseUrl));
+        }
+        else
+        {
+            // Check environment variable as fallback
+            var envBaseUrl = Environment.GetEnvironmentVariable("ANTHROPIC_BASE_URL");
+            if (!string.IsNullOrWhiteSpace(envBaseUrl))
+            {
+                arguments.Add("--base-url");
+                arguments.Add(EscapeArgument(envBaseUrl));
+            }
+        }
+
+        // Add timeout if provided
+        if (timeoutMs.HasValue)
+        {
+            arguments.Add("--timeout");
+            arguments.Add(timeoutMs.Value.ToString());
+        }
+        else
+        {
+            // Check environment variable as fallback
+            var envTimeout = Environment.GetEnvironmentVariable("API_TIMEOUT_MS");
+            if (!string.IsNullOrWhiteSpace(envTimeout))
+            {
+                arguments.Add("--timeout");
+                arguments.Add(envTimeout);
+            }
+        }
+
+        // Add model if provided
+        if (!string.IsNullOrWhiteSpace(model))
+        {
+            arguments.Add("--model");
+            arguments.Add(EscapeArgument(model));
+        }
+
+        // Add non-interactive flag and instruction
+        arguments.Add("--non-interactive");
+        arguments.Add(EscapeArgument(instruction));
+
         var startInfo = new ProcessStartInfo
         {
             FileName = ClaudeCodeCommand,
-            Arguments = $"--non-interactive {EscapeArgument(instruction)}",
+            Arguments = string.Join(" ", arguments),
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,

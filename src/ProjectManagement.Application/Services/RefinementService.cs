@@ -41,6 +41,10 @@ public class RefinementService : IRefinementService
 
     public async Task<RefinementResult> RefineWorkItemAsync(
         int workItemId,
+        string? apiKey = null,
+        string? baseUrl = null,
+        int? timeoutMs = null,
+        string? model = null,
         CancellationToken cancellationToken = default)
     {
         // Get the work item with its stories
@@ -64,7 +68,13 @@ public class RefinementService : IRefinementService
         try
         {
             // Call Claude to refine the work item
-            var claudeResult = await _claudeApiService.RefineWorkItemAsync(workItem, cancellationToken);
+            var claudeResult = await _claudeApiService.RefineWorkItemAsync(
+                workItem,
+                apiKey,
+                baseUrl,
+                timeoutMs,
+                model,
+                cancellationToken);
 
             // Create developer stories
             var stories = new List<DeveloperStory>();

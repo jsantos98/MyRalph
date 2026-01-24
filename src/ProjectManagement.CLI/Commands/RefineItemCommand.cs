@@ -39,7 +39,13 @@ public class RefineItemCommand : AsyncCommand<RefineItemCommand.Settings>
 
         try
         {
-            var result = await _refinementService.RefineWorkItemAsync(workItemId, cancellationToken);
+            var result = await _refinementService.RefineWorkItemAsync(
+                workItemId,
+                settings.GetApiKey(),
+                settings.GetBaseUrl(),
+                settings.GetTimeout(),
+                settings.GetModel(),
+                cancellationToken);
 
             AnsiConsole.MarkupLine($"[green]✓[/] Refinement completed!");
             AnsiConsole.MarkupLine($"[green]✓[/] Created [bold]{result.DeveloperStories.Count}[/] developer stories");
@@ -133,7 +139,7 @@ public class RefineItemCommand : AsyncCommand<RefineItemCommand.Settings>
         };
     }
 
-    public class Settings : CommandSettings
+    public class Settings : ClaudeCommandSettings
     {
         [CommandArgument(0, "<ID>")]
         public required int Id { get; set; }

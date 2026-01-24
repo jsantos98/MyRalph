@@ -11,6 +11,10 @@ public interface IClaudeCodeIntegration
     Task<ClaudeCodeResult> ExecuteAsync(
         string instruction,
         string workingDirectory,
+        string? apiKey = null,
+        string? baseUrl = null,
+        int? timeoutMs = null,
+        string? model = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

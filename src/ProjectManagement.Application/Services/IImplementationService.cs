@@ -14,6 +14,10 @@ public interface IImplementationService
         int developerStoryId,
         string mainBranch,
         string repositoryPath,
+        string? apiKey = null,
+        string? baseUrl = null,
+        int? timeoutMs = null,
+        string? model = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

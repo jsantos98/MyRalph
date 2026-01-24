@@ -51,6 +51,10 @@ public class ImplementationService : IImplementationService
         int developerStoryId,
         string mainBranch,
         string repositoryPath,
+        string? apiKey = null,
+        string? baseUrl = null,
+        int? timeoutMs = null,
+        string? model = null,
         CancellationToken cancellationToken = default)
     {
         var story = await _developerStoryRepository.GetWithDependenciesAsync(developerStoryId, cancellationToken);
@@ -123,6 +127,10 @@ public class ImplementationService : IImplementationService
             var claudeResult = await _claudeCodeIntegration.ExecuteAsync(
                 story.Instructions,
                 worktreePath,
+                apiKey,
+                baseUrl,
+                timeoutMs,
+                model,
                 cancellationToken);
 
             result.Output = claudeResult.StandardOutput;

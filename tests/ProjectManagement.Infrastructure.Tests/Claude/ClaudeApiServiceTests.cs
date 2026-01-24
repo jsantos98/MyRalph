@@ -91,7 +91,7 @@ public class ClaudeApiServiceTests : IDisposable
         // The test verifies the method signature and basic functionality
         await Assert.ThrowsAnyAsync<Exception>(async () =>
         {
-            await service.RefineWorkItemAsync(workItem);
+            await service.RefineWorkItemAsync(workItem, null, null, null, null);
         });
     }
 
@@ -129,7 +129,7 @@ public class ClaudeApiServiceTests : IDisposable
         // The service wraps cancellation in ClaudeIntegrationException
         await Assert.ThrowsAnyAsync<Exception>(async () =>
         {
-            await service.RefineWorkItemAsync(workItem, cts.Token);
+            await service.RefineWorkItemAsync(workItem, null, null, null, null, cts.Token);
         });
     }
 
@@ -151,7 +151,7 @@ public class ClaudeApiServiceTests : IDisposable
         // Act & Assert
         await Assert.ThrowsAnyAsync<Exception>(async () =>
         {
-            await service.RefineWorkItemAsync(workItem);
+            await service.RefineWorkItemAsync(workItem, null, null, null, null);
         });
     }
 
@@ -172,7 +172,7 @@ public class ClaudeApiServiceTests : IDisposable
         // Act & Assert
         await Assert.ThrowsAnyAsync<Exception>(async () =>
         {
-            await service.RefineWorkItemAsync(workItem);
+            await service.RefineWorkItemAsync(workItem, null, null, null, null);
         });
     }
 
@@ -193,7 +193,7 @@ public class ClaudeApiServiceTests : IDisposable
         // Act & Assert
         await Assert.ThrowsAnyAsync<Exception>(async () =>
         {
-            await service.RefineWorkItemAsync(workItem);
+            await service.RefineWorkItemAsync(workItem, null, null, null, null);
         });
     }
 
@@ -225,7 +225,7 @@ public class ClaudeApiServiceTests : IDisposable
         // Act & Assert
         await Assert.ThrowsAnyAsync<Exception>(async () =>
         {
-            await service.RefineWorkItemAsync(workItem);
+            await service.RefineWorkItemAsync(workItem, null, null, null, null);
         });
     }
 
@@ -245,7 +245,7 @@ public class ClaudeApiServiceTests : IDisposable
         // Act & Assert
         await Assert.ThrowsAnyAsync<Exception>(async () =>
         {
-            await service.RefineWorkItemAsync(workItem);
+            await service.RefineWorkItemAsync(workItem, null, null, null, null);
         });
     }
 }

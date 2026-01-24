@@ -12,6 +12,10 @@ public interface IClaudeApiService
     /// </summary>
     Task<ClaudeRefinementResult> RefineWorkItemAsync(
         WorkItem workItem,
+        string? apiKey = null,
+        string? baseUrl = null,
+        int? timeoutMs = null,
+        string? model = null,
         CancellationToken cancellationToken = default);
 }
 

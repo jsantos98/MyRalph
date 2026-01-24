@@ -65,7 +65,7 @@ public class ImplementationServiceTests
 
         // Act & Assert
         await Assert.ThrowsAsync<EntityNotFoundException>(() =>
-            _service.ImplementAsync(999, "main", "/path"));
+            _service.ImplementAsync(999, "main", "/path", null, null, null, null));
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public class ImplementationServiceTests
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidStateTransitionException>(() =>
-            _service.ImplementAsync(1, "main", "/path"));
+            _service.ImplementAsync(1, "main", "/path", null, null, null, null));
     }
 
     [Fact]
@@ -154,7 +154,7 @@ public class ImplementationServiceTests
             .ReturnsAsync(false);
 
         _mockClaudeCode
-            .Setup(c => c.ExecuteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(c => c.ExecuteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ClaudeCodeResult
             {
                 ExitCode = 0,
@@ -228,7 +228,7 @@ public class ImplementationServiceTests
             .Returns("/worktrees/ds-1");
 
         _mockClaudeCode
-            .Setup(c => c.ExecuteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(c => c.ExecuteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ClaudeCodeResult
             {
                 ExitCode = 1,
@@ -305,7 +305,7 @@ public class ImplementationServiceTests
             .ReturnsAsync(false);
 
         _mockClaudeCode
-            .Setup(c => c.ExecuteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(c => c.ExecuteAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ClaudeCodeResult { ExitCode = 0, Duration = TimeSpan.Zero });
 
         _mockUnitOfWork

@@ -47,7 +47,7 @@ public class RefinementServiceTests
 
         // Act & Assert
         await Assert.ThrowsAsync<EntityNotFoundException>(() =>
-            _service.RefineWorkItemAsync(999));
+            _service.RefineWorkItemAsync(999, null, null, null, null));
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public class RefinementServiceTests
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidStateTransitionException>(() =>
-            _service.RefineWorkItemAsync(1));
+            _service.RefineWorkItemAsync(1, null, null, null, null));
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public class RefinementServiceTests
         };
 
         _mockClaudeService
-            .Setup(s => s.RefineWorkItemAsync(workItem, It.IsAny<CancellationToken>()))
+            .Setup(s => s.RefineWorkItemAsync(workItem, null, null, null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(claudeResult);
 
         DeveloperStory? capturedStory1 = null;
@@ -175,7 +175,7 @@ public class RefinementServiceTests
             .Returns(true);
 
         _mockClaudeService
-            .Setup(s => s.RefineWorkItemAsync(workItem, It.IsAny<CancellationToken>()))
+            .Setup(s => s.RefineWorkItemAsync(workItem, null, null, null, null, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Claude API error"));
 
         _mockUnitOfWork
@@ -184,7 +184,7 @@ public class RefinementServiceTests
 
         // Act
         var exception = await Assert.ThrowsAsync<Exception>(() =>
-            _service.RefineWorkItemAsync(1));
+            _service.RefineWorkItemAsync(1, null, null, null, null));
 
         // Assert
         Assert.Contains("Claude API error", exception.Message);

@@ -12,6 +12,10 @@ public interface IRefinementService
     /// </summary>
     Task<RefinementResult> RefineWorkItemAsync(
         int workItemId,
+        string? apiKey = null,
+        string? baseUrl = null,
+        int? timeoutMs = null,
+        string? model = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
