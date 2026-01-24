@@ -54,16 +54,20 @@ public class RefinementService : IRefinementService
             throw new EntityNotFoundException(typeof(WorkItem), workItemId);
         }
 
-        // Validate state
-        if (!_stateManager.CanTransition(workItem.Status, WorkItemStatus.Refining))
+        // Validate state - allow re-refinement if already in Refining state
+        if (workItem.Status != WorkItemStatus.Refining &&
+            !_stateManager.CanTransition(workItem.Status, WorkItemStatus.Refining))
         {
             throw new InvalidStateTransitionException(workItem.Status, WorkItemStatus.Refining, typeof(WorkItem));
         }
 
-        // Update to Refining
-        workItem.UpdateStatus(WorkItemStatus.Refining);
-        await _workItemRepository.UpdateAsync(workItem, cancellationToken);
-        await _unitOfWork.CommitAsync(cancellationToken);
+        // Update to Refining only if not already in that state
+        if (workItem.Status != WorkItemStatus.Refining)
+        {
+            workItem.UpdateStatus(WorkItemStatus.Refining);
+            await _workItemRepository.UpdateAsync(workItem, cancellationToken);
+            await _unitOfWork.CommitAsync(cancellationToken);
+        }
 
         try
         {
@@ -107,6 +111,23 @@ public class RefinementService : IRefinementService
                 if (storyMap.TryGetValue(dep.DependentStoryIndex, out var dependentStory) &&
                     storyMap.TryGetValue(dep.RequiredStoryIndex, out var requiredStory))
                 {
+                    // Skip self-blocking dependencies (a story depending on itself)
+                    if (dependentStory.Id == requiredStory.Id)
+                    {
+                        _logger.LogWarning("Skipping self-blocking dependency for Story {StoryId}", dependentStory.Id);
+                        continue;
+                    }
+
+                    // Skip duplicate dependencies
+                    if (dependencies.Any(d =>
+                        d.DependentStoryId == dependentStory.Id &&
+                        d.RequiredStoryId == requiredStory.Id))
+                    {
+                        _logger.LogWarning("Skipping duplicate dependency: Story {DependentId} -> Story {RequiredId}",
+                            dependentStory.Id, requiredStory.Id);
+                        continue;
+                    }
+
                     var dependency = new DeveloperStoryDependency
                     {
                         DependentStoryId = dependentStory.Id,

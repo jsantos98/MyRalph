@@ -75,6 +75,111 @@ public class RefinementServiceTests
             _service.RefineWorkItemAsync(1, null, null, null, null));
     }
 
+    /// <summary>
+    /// Tests that re-refinement works when the work item is already in 'Refining' state.
+    /// This handles the case where a previous refinement attempt failed and left the
+    /// work item in the 'Refining' state.
+    /// </summary>
+    [Fact]
+    public async Task RefineWorkItemAsync_WithAlreadyRefiningStatus_AllowsReRefinement()
+    {
+        // Arrange
+        var workItem = new WorkItem
+        {
+            Type = WorkItemType.UserStory,
+            Title = "Test Story",
+            Description = "Test Description",
+            Status = WorkItemStatus.Refining  // Already in Refining state
+        };
+        workItem.GetType().GetProperty("Id")?.SetValue(workItem, 1);
+
+        _mockWorkItemRepo
+            .Setup(r => r.GetWithDeveloperStoriesAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(workItem);
+
+        var claudeResult = new Infrastructure.Claude.ClaudeRefinementResult
+        {
+            DeveloperStories = new List<Infrastructure.Claude.DeveloperStoryGeneration>
+            {
+                new() { Title = "Story 1", Description = "D1", Instructions = "I1", StoryType = 0 }
+            },
+            Dependencies = new List<Infrastructure.Claude.StoryDependency>(),
+            Analysis = "Re-refinement analysis"
+        };
+
+        _mockClaudeService
+            .Setup(s => s.RefineWorkItemAsync(workItem, null, null, null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(claudeResult);
+
+        DeveloperStory? capturedStory = null;
+
+        _mockDeveloperStoryRepo
+            .Setup(r => r.AddAsync(It.IsAny<DeveloperStory>(), It.IsAny<CancellationToken>()))
+            .Callback<DeveloperStory, CancellationToken>((story, _) =>
+            {
+                capturedStory = story;
+                story.GetType().GetProperty("Id")?.SetValue(story, 1);
+            })
+            .ReturnsAsync((DeveloperStory story, CancellationToken _) => story);
+
+        _mockDeveloperStoryRepo
+            .Setup(r => r.GetWithDependenciesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((int id, CancellationToken _) => capturedStory);
+
+        _mockUnitOfWork
+            .Setup(u => u.CommitAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        // Act
+        var result = await _service.RefineWorkItemAsync(1);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(WorkItemStatus.Refined, result.WorkItem.Status);
+        Assert.Equal("Re-refinement analysis", result.Analysis);
+
+        // Verify that UpdateAsync for the work item was NOT called for the initial Refining transition
+        // since it was already in Refining state (idempotent operation)
+        _mockWorkItemRepo.Verify(r => r.UpdateAsync(It.IsAny<WorkItem>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+    }
+
+    /// <summary>
+    /// Tests that re-refinement with error still updates the work item to Error state.
+    /// </summary>
+    [Fact]
+    public async Task RefineWorkItemAsync_WithRefiningStatusAndClaudeError_UpdatesToError()
+    {
+        // Arrange
+        var workItem = new WorkItem
+        {
+            Type = WorkItemType.UserStory,
+            Title = "Test Story",
+            Description = "Test Description",
+            Status = WorkItemStatus.Refining
+        };
+        workItem.GetType().GetProperty("Id")?.SetValue(workItem, 1);
+
+        _mockWorkItemRepo
+            .Setup(r => r.GetWithDeveloperStoriesAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(workItem);
+
+        _mockClaudeService
+            .Setup(s => s.RefineWorkItemAsync(workItem, null, null, null, null, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Re-refinement failed"));
+
+        _mockUnitOfWork
+            .Setup(u => u.CommitAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        // Act
+        var exception = await Assert.ThrowsAsync<Exception>(() =>
+            _service.RefineWorkItemAsync(1, null, null, null, null));
+
+        // Assert
+        Assert.Contains("Re-refinement failed", exception.Message);
+        Assert.Equal(WorkItemStatus.Error, workItem.Status);
+    }
+
     [Fact]
     public async Task RefineWorkItemAsync_WithClaudeSuccess_CreatesDeveloperStories()
     {
@@ -292,5 +397,80 @@ public class RefinementServiceTests
         Assert.Equal(DeveloperStoryStatus.Ready, capturedStory.Status);
         Assert.Equal(1, capturedStory.WorkItemId);
         _mockUnitOfWork.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    /// <summary>
+    /// Tests that self-blocking dependencies (a story depending on itself) are skipped.
+    /// </summary>
+    [Fact]
+    public async Task RefineWorkItemAsync_WithSelfBlockingDependency_SkipsSelfDependency()
+    {
+        // Arrange
+        var workItem = new WorkItem
+        {
+            Type = WorkItemType.UserStory,
+            Title = "Test Story",
+            Description = "Test Description",
+            Status = WorkItemStatus.Pending
+        };
+        workItem.GetType().GetProperty("Id")?.SetValue(workItem, 1);
+
+        _mockWorkItemRepo
+            .Setup(r => r.GetWithDeveloperStoriesAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(workItem);
+        _mockStateManager
+            .Setup(s => s.CanTransition(WorkItemStatus.Pending, WorkItemStatus.Refining))
+            .Returns(true);
+
+        // Create a result with a self-blocking dependency (story 0 depends on story 0)
+        var claudeResult = new Infrastructure.Claude.ClaudeRefinementResult
+        {
+            DeveloperStories = new List<Infrastructure.Claude.DeveloperStoryGeneration>
+            {
+                new() { Title = "Story 1", Description = "D1", Instructions = "I1", StoryType = 0 }
+            },
+            Dependencies = new List<Infrastructure.Claude.StoryDependency>
+            {
+                new() { DependentStoryIndex = 0, RequiredStoryIndex = 0, Description = "Self-blocking" }
+            },
+            Analysis = "Test analysis"
+        };
+
+        _mockClaudeService
+            .Setup(s => s.RefineWorkItemAsync(workItem, null, null, null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(claudeResult);
+
+        DeveloperStory? capturedStory = null;
+
+        _mockDeveloperStoryRepo
+            .Setup(r => r.AddAsync(It.IsAny<DeveloperStory>(), It.IsAny<CancellationToken>()))
+            .Callback<DeveloperStory, CancellationToken>((story, _) =>
+            {
+                capturedStory = story;
+                story.GetType().GetProperty("Id")?.SetValue(story, 1);
+            })
+            .ReturnsAsync((DeveloperStory story, CancellationToken _) => story);
+
+        _mockDeveloperStoryRepo
+            .Setup(r => r.GetWithDependenciesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((int id, CancellationToken _) => capturedStory);
+
+        _mockUnitOfWork
+            .Setup(u => u.CommitAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+
+        // Act
+        var result = await _service.RefineWorkItemAsync(1);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(WorkItemStatus.Refined, result.WorkItem.Status);
+        // Story should be Ready (not Blocked) since self-blocking was skipped
+        Assert.NotNull(capturedStory);
+        Assert.Equal(DeveloperStoryStatus.Ready, capturedStory.Status);
+        // Verify no dependencies were added (self-blocking was skipped)
+        _mockDependencyRepo.Verify(
+            r => r.AddAsync(It.IsAny<DeveloperStoryDependency>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 }

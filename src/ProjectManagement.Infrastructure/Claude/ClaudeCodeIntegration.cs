@@ -1,11 +1,12 @@
 using System.Diagnostics;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using ProjectManagement.Core.Exceptions;
 
 namespace ProjectManagement.Infrastructure.Claude;
 
 /// <summary>
-/// Claude Code CLI integration service
+/// Claude Code CLI integration service with support for multi-turn conversations
 /// </summary>
 public class ClaudeCodeIntegration : IClaudeCodeIntegration
 {
@@ -55,69 +56,52 @@ public class ClaudeCodeIntegration : IClaudeCodeIntegration
         string? model = null,
         CancellationToken cancellationToken = default)
     {
-        // Build command line arguments
+        return await StartSessionAsync(instruction, workingDirectory, apiKey, baseUrl, timeoutMs, model, cancellationToken);
+    }
+
+    public async Task<ClaudeCodeResult> StartSessionAsync(
+        string instruction,
+        string workingDirectory,
+        string? apiKey = null,
+        string? baseUrl = null,
+        int? timeoutMs = null,
+        string? model = null,
+        CancellationToken cancellationToken = default)
+    {
+        // Get effective values from parameters or environment variables
+        var effectiveApiKey = GetEffectiveApiKey(apiKey);
+        var effectiveBaseUrl = GetEffectiveBaseUrl(baseUrl);
+        var effectiveTimeout = GetEffectiveTimeout(timeoutMs);
+
+        // Validate that API key is available
+        if (string.IsNullOrWhiteSpace(effectiveApiKey))
+        {
+            throw new ClaudeIntegrationException(
+                "Claude Code API key is not configured. Please set the ANTHROPIC_AUTH_TOKEN environment variable " +
+                "or ensure Claude Code is properly authenticated via 'claude login'.");
+        }
+
+        _logger.LogInformation("Claude Code API key is configured, base URL: {BaseUrl}",
+            string.IsNullOrWhiteSpace(effectiveBaseUrl) ? "default" : effectiveBaseUrl);
+
+        // Build command line arguments for a new session
         var arguments = new List<string>();
 
-        // Add API key if provided
-        if (!string.IsNullOrWhiteSpace(apiKey))
-        {
-            arguments.Add("--api-key");
-            arguments.Add(EscapeArgument(apiKey));
-        }
-        else
-        {
-            // Check environment variable as fallback
-            var envApiKey = Environment.GetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN");
-            if (!string.IsNullOrWhiteSpace(envApiKey))
-            {
-                arguments.Add("--api-key");
-                arguments.Add(EscapeArgument(envApiKey));
-            }
-        }
+        // Add print mode flag (non-interactive)
+        arguments.Add("-p");
 
-        // Add base URL if provided
-        if (!string.IsNullOrWhiteSpace(baseUrl))
-        {
-            arguments.Add("--base-url");
-            arguments.Add(EscapeArgument(baseUrl));
-        }
-        else
-        {
-            // Check environment variable as fallback
-            var envBaseUrl = Environment.GetEnvironmentVariable("ANTHROPIC_BASE_URL");
-            if (!string.IsNullOrWhiteSpace(envBaseUrl))
-            {
-                arguments.Add("--base-url");
-                arguments.Add(EscapeArgument(envBaseUrl));
-            }
-        }
-
-        // Add timeout if provided
-        if (timeoutMs.HasValue)
-        {
-            arguments.Add("--timeout");
-            arguments.Add(timeoutMs.Value.ToString());
-        }
-        else
-        {
-            // Check environment variable as fallback
-            var envTimeout = Environment.GetEnvironmentVariable("API_TIMEOUT_MS");
-            if (!string.IsNullOrWhiteSpace(envTimeout))
-            {
-                arguments.Add("--timeout");
-                arguments.Add(envTimeout);
-            }
-        }
+        // Add output format as JSON for structured parsing
+        arguments.Add("--output-format");
+        arguments.Add("json");
 
         // Add model if provided
         if (!string.IsNullOrWhiteSpace(model))
         {
             arguments.Add("--model");
-            arguments.Add(EscapeArgument(model));
+            arguments.Add(model);
         }
 
-        // Add non-interactive flag and instruction
-        arguments.Add("--non-interactive");
+        // Add the instruction as the last argument
         arguments.Add(EscapeArgument(instruction));
 
         var startInfo = new ProcessStartInfo
@@ -131,9 +115,108 @@ public class ClaudeCodeIntegration : IClaudeCodeIntegration
             WorkingDirectory = workingDirectory
         };
 
-        _logger.LogInformation("Executing Claude Code in {Directory}: {Instruction}",
-            workingDirectory, instruction.Substring(0, Math.Min(100, instruction.Length)));
+        // Set environment variables for the child process
+        if (!string.IsNullOrWhiteSpace(effectiveApiKey))
+        {
+            startInfo.Environment["ANTHROPIC_AUTH_TOKEN"] = effectiveApiKey;
+        }
+        if (!string.IsNullOrWhiteSpace(effectiveBaseUrl))
+        {
+            startInfo.Environment["ANTHROPIC_BASE_URL"] = effectiveBaseUrl;
+        }
 
+        _logger.LogInformation("Starting Claude Code session in {Directory}", workingDirectory);
+
+        var result = await ExecuteProcessAsync(startInfo, cancellationToken);
+
+        // Try to extract session ID from the response
+        result.SessionId = ExtractSessionId(result.StandardOutput);
+
+        return result;
+    }
+
+    public async Task<ClaudeCodeResult> ContinueSessionAsync(
+        string sessionId,
+        string instruction,
+        string workingDirectory,
+        string? apiKey = null,
+        string? baseUrl = null,
+        int? timeoutMs = null,
+        string? model = null,
+        CancellationToken cancellationToken = default)
+    {
+        // Get effective values from parameters or environment variables
+        var effectiveApiKey = GetEffectiveApiKey(apiKey);
+        var effectiveBaseUrl = GetEffectiveBaseUrl(baseUrl);
+        var effectiveTimeout = GetEffectiveTimeout(timeoutMs);
+
+        // Validate that API key is available
+        if (string.IsNullOrWhiteSpace(effectiveApiKey))
+        {
+            throw new ClaudeIntegrationException(
+                "Claude Code API key is not configured. Please set the ANTHROPIC_AUTH_TOKEN environment variable.");
+        }
+
+        // Build command line arguments for continuing a session
+        var arguments = new List<string>();
+
+        // Add print mode flag (non-interactive)
+        arguments.Add("-p");
+
+        // Add continue flag with session ID
+        arguments.Add("--continue");
+        arguments.Add("--session-id");
+        arguments.Add(sessionId);
+
+        // Add output format as JSON for structured parsing
+        arguments.Add("--output-format");
+        arguments.Add("json");
+
+        // Add model if provided (can override the model from the previous turn)
+        if (!string.IsNullOrWhiteSpace(model))
+        {
+            arguments.Add("--model");
+            arguments.Add(model);
+        }
+
+        // Add the instruction as the last argument
+        arguments.Add(EscapeArgument(instruction));
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = ClaudeCodeCommand,
+            Arguments = string.Join(" ", arguments),
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WorkingDirectory = workingDirectory
+        };
+
+        // Set environment variables for the child process
+        if (!string.IsNullOrWhiteSpace(effectiveApiKey))
+        {
+            startInfo.Environment["ANTHROPIC_AUTH_TOKEN"] = effectiveApiKey;
+        }
+        if (!string.IsNullOrWhiteSpace(effectiveBaseUrl))
+        {
+            startInfo.Environment["ANTHROPIC_BASE_URL"] = effectiveBaseUrl;
+        }
+
+        _logger.LogInformation("Continuing Claude Code session {SessionId} in {Directory}", sessionId, workingDirectory);
+
+        var result = await ExecuteProcessAsync(startInfo, cancellationToken);
+
+        // Preserve the session ID
+        result.SessionId = sessionId;
+
+        return result;
+    }
+
+    private async Task<ClaudeCodeResult> ExecuteProcessAsync(
+        ProcessStartInfo startInfo,
+        CancellationToken cancellationToken)
+    {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
         try
@@ -172,6 +255,63 @@ public class ClaudeCodeIntegration : IClaudeCodeIntegration
             _logger.LogError(ex, "Error executing Claude Code");
             throw new ClaudeIntegrationException($"Failed to execute Claude Code: {ex.Message}", ex);
         }
+    }
+
+    private static string? ExtractSessionId(string content)
+    {
+        try
+        {
+            // Try to parse the JSON response to extract session_id
+            using var doc = JsonDocument.Parse(content);
+            if (doc.RootElement.TryGetProperty("session_id", out var sessionIdElem) &&
+                sessionIdElem.ValueKind == JsonValueKind.String)
+            {
+                return sessionIdElem.GetString();
+            }
+
+            // Also check for uuid field as an alternative
+            if (doc.RootElement.TryGetProperty("uuid", out var uuidElem) &&
+                uuidElem.ValueKind == JsonValueKind.String)
+            {
+                return uuidElem.GetString();
+            }
+        }
+        catch
+        {
+            // If parsing fails, return null
+        }
+
+        return null;
+    }
+
+    private static string? GetEffectiveApiKey(string? apiKey)
+    {
+        return !string.IsNullOrWhiteSpace(apiKey)
+            ? apiKey
+            : Environment.GetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN");
+    }
+
+    private static string? GetEffectiveBaseUrl(string? baseUrl)
+    {
+        return !string.IsNullOrWhiteSpace(baseUrl)
+            ? baseUrl
+            : Environment.GetEnvironmentVariable("ANTHROPIC_BASE_URL");
+    }
+
+    private static int? GetEffectiveTimeout(int? timeoutMs)
+    {
+        if (timeoutMs.HasValue)
+        {
+            return timeoutMs.Value;
+        }
+
+        var envTimeout = Environment.GetEnvironmentVariable("API_TIMEOUT_MS");
+        if (int.TryParse(envTimeout, out var timeout))
+        {
+            return timeout;
+        }
+
+        return null;
     }
 
     private static string EscapeArgument(string argument)

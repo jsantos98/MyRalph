@@ -1,30 +1,29 @@
 using System.Text.Json;
-using Anthropic.SDK;
-using Anthropic.SDK.Constants;
-using Anthropic.SDK.Messaging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ProjectManagement.Core.Entities;
 using ProjectManagement.Core.Enums;
 using ProjectManagement.Core.Exceptions;
-using Anthropic;
 
 namespace ProjectManagement.Infrastructure.Claude;
 
 /// <summary>
-/// Claude API service for work item refinement
+/// Claude service for work item refinement using Claude Code CLI in non-interactive mode
 /// </summary>
 public class ClaudeApiService : IClaudeApiService
 {
     private readonly ClaudeApiSettings _settings;
     private readonly ILogger<ClaudeApiService> _logger;
+    private readonly IClaudeCodeIntegration _claudeCodeIntegration;
 
     public ClaudeApiService(
         IOptions<ClaudeApiSettings> settings,
-        ILogger<ClaudeApiService> logger)
+        ILogger<ClaudeApiService> logger,
+        IClaudeCodeIntegration claudeCodeIntegration)
     {
         _settings = settings.Value;
         _logger = logger;
+        _claudeCodeIntegration = claudeCodeIntegration;
     }
 
     public async Task<ClaudeRefinementResult> RefineWorkItemAsync(
@@ -35,11 +34,11 @@ public class ClaudeApiService : IClaudeApiService
         string? model = null,
         CancellationToken cancellationToken = default)
     {
-        // Use provided API key or fall back to settings
-        var effectiveApiKey = apiKey ?? _settings.ApiKey ?? Environment.GetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN");
-        if (string.IsNullOrWhiteSpace(effectiveApiKey))
+        // Check if Claude Code CLI is available
+        var isAvailable = await _claudeCodeIntegration.IsAvailableAsync(cancellationToken);
+        if (!isAvailable)
         {
-            throw new ClaudeIntegrationException("Claude API key is not configured.");
+            throw new ClaudeIntegrationException("Claude Code CLI is not available. Please ensure it is installed and accessible.");
         }
 
         // Use provided model or fall back to settings
@@ -47,69 +46,63 @@ public class ClaudeApiService : IClaudeApiService
 
         try
         {
-            AnthropicClient client;
+            // Get the current working directory
+            var workingDirectory = Directory.GetCurrentDirectory();
 
-            // Note: Base URL configuration would require HttpClient custom configuration
-            // For now, we use the default client which reads from ANTHROPIC_BASE_URL env var
-            // The baseUrl parameter is kept for API compatibility but not used directly
-            client = new AnthropicClient(effectiveApiKey);
+            _logger.LogInformation("Starting multi-turn refinement for WorkItem {WorkItemId}", workItem.Id);
 
-            var systemPrompt = BuildSystemPrompt();
-            var userPrompt = BuildUserPrompt(workItem);
+            // Turn 1: Ask Claude to analyze the work item and identify questions
+            var analysisPrompt = BuildAnalysisPrompt(workItem);
+            var analysisResult = await _claudeCodeIntegration.StartSessionAsync(
+                analysisPrompt,
+                workingDirectory,
+                apiKey,
+                baseUrl,
+                timeoutMs,
+                effectiveModel,
+                cancellationToken);
 
-            _logger.LogInformation("Sending refinement request to Claude for WorkItem {WorkItemId}", workItem.Id);
-
-            var parameters = new MessageParameters()
+            if (analysisResult.ExitCode != 0)
             {
-                Model = effectiveModel,
-                MaxTokens = _settings.MaxTokens,
-                System = new List<SystemMessage> { new SystemMessage(systemPrompt) },
-                Messages = new List<Message>()
-                {
-                    new Message(RoleType.User, userPrompt)
-                },
-                Temperature = 0.3m
-            };
-
-            // Apply timeout if specified
-            MessageResponse message;
-            if (timeoutMs.HasValue)
-            {
-                using var cts = new CancellationTokenSource(timeoutMs.Value);
-                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cts.Token);
-                message = await client.Messages.GetClaudeMessageAsync(parameters, linkedCts.Token);
-            }
-            else
-            {
-                message = await client.Messages.GetClaudeMessageAsync(parameters, cancellationToken);
+                var errorMsg = !string.IsNullOrWhiteSpace(analysisResult.StandardError)
+                    ? analysisResult.StandardError
+                    : analysisResult.StandardOutput;
+                throw new ClaudeIntegrationException($"Claude Code analysis failed with code {analysisResult.ExitCode}: {errorMsg}");
             }
 
-            // Get text content from the response
-            string content = string.Empty;
-            if (message?.Content != null)
+            // Parse the analysis response to get questions
+            var analysisContent = ParseCliResponse(analysisResult.StandardOutput);
+            _logger.LogInformation("Turn 1 complete. Analysis: {Analysis}", analysisContent.Substring(0, Math.Min(200, analysisContent.Length)));
+
+            // Turn 2: Provide context and ask for the final JSON breakdown
+            var refinementPrompt = BuildRefinementPrompt(workItem, analysisContent);
+            var sessionId = analysisResult.SessionId ?? Guid.NewGuid().ToString();
+
+            var refinementResult = await _claudeCodeIntegration.ContinueSessionAsync(
+                sessionId,
+                refinementPrompt,
+                workingDirectory,
+                apiKey,
+                baseUrl,
+                timeoutMs,
+                effectiveModel,
+                cancellationToken);
+
+            if (refinementResult.ExitCode != 0)
             {
-                foreach (var contentBlock in message.Content)
-                {
-                    if (contentBlock != null && contentBlock.GetType().Name == "TextBlock")
-                    {
-                        var textProperty = contentBlock.GetType().GetProperty("Text");
-                        if (textProperty != null)
-                        {
-                            content += textProperty.GetValue(contentBlock)?.ToString() ?? string.Empty;
-                        }
-                    }
-                }
+                var errorMsg = !string.IsNullOrWhiteSpace(refinementResult.StandardError)
+                    ? refinementResult.StandardError
+                    : refinementResult.StandardOutput;
+                throw new ClaudeIntegrationException($"Claude Code refinement failed with code {refinementResult.ExitCode}: {errorMsg}");
             }
 
-            if (string.IsNullOrWhiteSpace(content))
-            {
-                throw new ClaudeIntegrationException("Claude returned empty response.");
-            }
+            // Parse the final JSON response
+            var resultContent = ParseCliResponse(refinementResult.StandardOutput);
 
-            // Extract JSON from response (handle markdown code blocks)
-            var jsonContent = ExtractJsonFromResponse(content);
+            // Extract JSON from the result content (handle markdown code blocks)
+            var jsonContent = ExtractJsonFromResponse(resultContent);
 
-            var result = JsonSerializer.Deserialize<ClaudeRefinementResult>(
+            var claudeResult = JsonSerializer.Deserialize<ClaudeRefinementResult>(
                 jsonContent,
                 new JsonSerializerOptions
                 {
@@ -117,14 +110,18 @@ public class ClaudeApiService : IClaudeApiService
                     AllowTrailingCommas = true
                 });
 
-            if (result == null)
+            if (claudeResult == null)
             {
-                throw new ClaudeIntegrationException("Failed to parse Claude response.");
+                throw new ClaudeIntegrationException("Failed to parse Claude Code response.");
             }
 
-            _logger.LogInformation("Claude returned {Count} developer stories", result.DeveloperStories.Count);
+            // Include the analysis in the result
+            claudeResult.Analysis = analysisContent + "\n\n" + (claudeResult.Analysis ?? "");
 
-            return result;
+            _logger.LogInformation("Multi-turn refinement complete. Claude Code returned {Count} developer stories in {Duration}",
+                claudeResult.DeveloperStories.Count, analysisResult.Duration + refinementResult.Duration);
+
+            return claudeResult;
         }
         catch (ClaudeIntegrationException)
         {
@@ -132,15 +129,52 @@ public class ClaudeApiService : IClaudeApiService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error calling Claude API for WorkItem {WorkItemId}", workItem.Id);
+            _logger.LogError(ex, "Error calling Claude Code CLI for WorkItem {WorkItemId}", workItem.Id);
             throw new ClaudeIntegrationException($"Failed to refine work item: {ex.Message}", ex);
         }
     }
 
-    private string BuildSystemPrompt()
+    private string BuildAnalysisPrompt(WorkItem workItem)
     {
+        var typeText = workItem.Type == WorkItemType.UserStory ? "User Story" : "Bug";
         var sb = new System.Text.StringBuilder();
-        sb.AppendLine("You are an expert software architect and developer. Your task is to break down user stories and bugs into detailed developer stories that can be implemented autonomously.");
+
+        sb.AppendLine("You are an expert software architect and developer. Your task is to analyze a work item and prepare to break it down into detailed developer stories.");
+        sb.AppendLine();
+        sb.AppendLine("For this work item, I need you to:");
+        sb.AppendLine("1. Analyze the requirements and identify what information you need");
+        sb.AppendLine("2. List 3-5 clarifying questions that would help create better developer stories");
+        sb.AppendLine("3. Identify any potential technical considerations or edge cases");
+        sb.AppendLine();
+        sb.AppendLine("For each question, explain WHY you need this information.");
+        sb.AppendLine();
+        sb.AppendLine("Do NOT output JSON yet. Just provide your analysis and questions in plain text.");
+        sb.AppendLine();
+        sb.AppendLine($"# {typeText}: {workItem.Title}");
+        sb.AppendLine();
+        sb.AppendLine($"**Description:** {workItem.Description}");
+        sb.AppendLine();
+
+        if (!string.IsNullOrWhiteSpace(workItem.AcceptanceCriteria))
+        {
+            sb.AppendLine($"**Acceptance Criteria:**");
+            sb.AppendLine(workItem.AcceptanceCriteria);
+            sb.AppendLine();
+        }
+
+        sb.AppendLine($"**Priority:** {workItem.Priority} (1=highest, 9=lowest)");
+        sb.AppendLine();
+        sb.AppendLine("Please analyze this work item and provide your questions.");
+
+        return sb.ToString();
+    }
+
+    private string BuildRefinementPrompt(WorkItem workItem, string previousAnalysis)
+    {
+        var typeText = workItem.Type == WorkItemType.UserStory ? "User Story" : "Bug";
+        var sb = new System.Text.StringBuilder();
+
+        sb.AppendLine("Thank you for your analysis. Now, based on your understanding of the work item, please break it down into detailed developer stories.");
         sb.AppendLine();
         sb.AppendLine("For each work item, create a set of developer stories with the following types:");
         sb.AppendLine("- Implementation (0): Main feature/fix implementation");
@@ -159,22 +193,26 @@ public class ClaudeApiService : IClaudeApiService
         sb.AppendLine("- requiredStoryIndex: Index of the story that must complete first");
         sb.AppendLine("- description: Why this dependency exists");
         sb.AppendLine();
-        sb.AppendLine("Return your response as a JSON object.");
+        sb.AppendLine("Return your response as a JSON object with this structure:");
+        sb.AppendLine("{");
+        sb.AppendLine("  \"developerStories\": [");
+        sb.AppendLine("    { \"title\": \"...\", \"description\": \"...\", \"instructions\": \"...\", \"storyType\": 0 },");
+        sb.AppendLine("    ...");
+        sb.AppendLine("  ],");
+        sb.AppendLine("  \"dependencies\": [");
+        sb.AppendLine("    { \"dependentStoryIndex\": 0, \"requiredStoryIndex\": 1, \"description\": \"...\" },");
+        sb.AppendLine("    ...");
+        sb.AppendLine("  ],");
+        sb.AppendLine("  \"analysis\": \"Brief summary of your approach...\"");
+        sb.AppendLine("}");
         sb.AppendLine();
         sb.AppendLine("Ensure that:");
         sb.AppendLine("1. Implementation stories come before their corresponding test stories");
         sb.AppendLine("2. Each story is atomic and can be completed independently (aside from dependencies)");
         sb.AppendLine("3. Instructions are detailed enough for autonomous implementation");
         sb.AppendLine("4. Dependencies are minimized where possible");
-
-        return sb.ToString();
-    }
-
-    private string BuildUserPrompt(WorkItem workItem)
-    {
-        var typeText = workItem.Type == WorkItemType.UserStory ? "User Story" : "Bug";
-        var sb = new System.Text.StringBuilder();
-
+        sb.AppendLine("5. NO STORY SHOULD DEPEND ON ITSELF (no self-blocking)");
+        sb.AppendLine();
         sb.AppendLine($"# {typeText}: {workItem.Title}");
         sb.AppendLine();
         sb.AppendLine($"**Description:** {workItem.Description}");
@@ -189,9 +227,41 @@ public class ClaudeApiService : IClaudeApiService
 
         sb.AppendLine($"**Priority:** {workItem.Priority} (1=highest, 9=lowest)");
         sb.AppendLine();
-        sb.AppendLine("Please break this down into developer stories following the specified format.");
+        sb.AppendLine("Please break this down into developer stories following the specified format. Output ONLY the JSON object, no markdown formatting.");
 
         return sb.ToString();
+    }
+
+    private string ParseCliResponse(string content)
+    {
+        // Parse the Claude Code CLI JSON response to extract the actual result
+        var cliResponse = JsonSerializer.Deserialize<ClaudeCodeCliResponse>(content,
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                AllowTrailingCommas = true
+            });
+
+        if (cliResponse == null)
+        {
+            throw new ClaudeIntegrationException("Failed to parse Claude Code CLI response.");
+        }
+
+        // Check if there was an error in the CLI execution
+        if (!string.IsNullOrWhiteSpace(cliResponse.Error))
+        {
+            throw new ClaudeIntegrationException($"Claude Code CLI error: {cliResponse.Error}");
+        }
+
+        // Extract the actual result content
+        var resultContent = cliResponse.Result ?? cliResponse.Output ?? content;
+
+        if (string.IsNullOrWhiteSpace(resultContent))
+        {
+            throw new ClaudeIntegrationException("Claude Code CLI returned empty result content.");
+        }
+
+        return resultContent;
     }
 
     private string ExtractJsonFromResponse(string content)
@@ -271,6 +341,20 @@ public class ClaudeApiService : IClaudeApiService
 
         return content.Trim();
     }
+}
+
+/// <summary>
+/// Response structure from Claude Code CLI when using --output-format json
+/// </summary>
+internal class ClaudeCodeCliResponse
+{
+    public string? Type { get; set; }
+    public string? Subtype { get; set; }
+    public bool IsError { get; set; }
+    public string? Result { get; set; }
+    public string? Output { get; set; }
+    public string? Error { get; set; }
+    public int? ExitCode { get; set; }
 }
 
 /// <summary>

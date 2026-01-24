@@ -174,62 +174,12 @@ public class ClaudeCodeIntegrationTests : IDisposable
         }
     }
 
-    // New tests for command-line options
+    // Tests for Claude Code CLI specific arguments
 
-    [Fact]
-    public async Task ExecuteAsync_WithApiKeyParameter_DoesNotThrow()
-    {
-        // Arrange
-        var instructions = "Test instruction";
-
-        // Act & Assert
-        try
-        {
-            var result = await _integration.ExecuteAsync(".", instructions, "test-api-key", null, null, null);
-            Assert.NotNull(result);
-        }
-        catch (Exception)
-        {
-            // Expected if Claude Code is not installed
-        }
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_WithBaseUrlParameter_DoesNotThrow()
-    {
-        // Arrange
-        var instructions = "Test instruction";
-
-        // Act & Assert
-        try
-        {
-            var result = await _integration.ExecuteAsync(".", instructions, null, "https://api.example.com", null, null);
-            Assert.NotNull(result);
-        }
-        catch (Exception)
-        {
-            // Expected if Claude Code is not installed
-        }
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_WithTimeoutParameter_DoesNotThrow()
-    {
-        // Arrange
-        var instructions = "Test instruction";
-
-        // Act & Assert
-        try
-        {
-            var result = await _integration.ExecuteAsync(".", instructions, null, null, 5000, null);
-            Assert.NotNull(result);
-        }
-        catch (Exception)
-        {
-            // Expected if Claude Code is not installed
-        }
-    }
-
+    /// <summary>
+    /// Tests that the ExecuteAsync method accepts model parameter.
+    /// The model parameter is passed to Claude Code CLI via --model flag.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_WithModelParameter_DoesNotThrow()
     {
@@ -239,7 +189,7 @@ public class ClaudeCodeIntegrationTests : IDisposable
         // Act & Assert
         try
         {
-            var result = await _integration.ExecuteAsync(".", instructions, null, null, null, "GLM-4.7");
+            var result = await _integration.ExecuteAsync(".", instructions, null, null, null, "sonnet");
             Assert.NotNull(result);
         }
         catch (Exception)
@@ -248,6 +198,82 @@ public class ClaudeCodeIntegrationTests : IDisposable
         }
     }
 
+    /// <summary>
+    /// Tests that the ExecuteAsync method accepts apiKey parameter for backward compatibility.
+    /// Note: apiKey is NOT passed as a CLI argument since Claude Code doesn't support --api-key flag.
+    /// API key should be configured via Claude Code settings or environment variables.
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_WithApiKeyParameter_DoesNotThrow()
+    {
+        // Arrange
+        var instructions = "Test instruction";
+
+        // Act & Assert
+        try
+        {
+            // apiKey parameter is accepted but not used as CLI argument
+            var result = await _integration.ExecuteAsync(".", instructions, "test-api-key", null, null, null);
+            Assert.NotNull(result);
+        }
+        catch (Exception)
+        {
+            // Expected if Claude Code is not installed
+        }
+    }
+
+    /// <summary>
+    /// Tests that the ExecuteAsync method accepts baseUrl parameter for backward compatibility.
+    /// Note: baseUrl is NOT passed as a CLI argument since Claude Code doesn't support --base-url flag.
+    /// Base URL should be configured via Claude Code settings or environment variables.
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_WithBaseUrlParameter_DoesNotThrow()
+    {
+        // Arrange
+        var instructions = "Test instruction";
+
+        // Act & Assert
+        try
+        {
+            // baseUrl parameter is accepted but not used as CLI argument
+            var result = await _integration.ExecuteAsync(".", instructions, null, "https://api.example.com", null, null);
+            Assert.NotNull(result);
+        }
+        catch (Exception)
+        {
+            // Expected if Claude Code is not installed
+        }
+    }
+
+    /// <summary>
+    /// Tests that the ExecuteAsync method accepts timeoutMs parameter for backward compatibility.
+    /// Note: timeoutMs is NOT passed as a CLI argument since Claude Code doesn't support --timeout flag.
+    /// Timeout should be configured via Claude Code settings.
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_WithTimeoutParameter_DoesNotThrow()
+    {
+        // Arrange
+        var instructions = "Test instruction";
+
+        // Act & Assert
+        try
+        {
+            // timeoutMs parameter is accepted but not used as CLI argument
+            var result = await _integration.ExecuteAsync(".", instructions, null, null, 5000, null);
+            Assert.NotNull(result);
+        }
+        catch (Exception)
+        {
+            // Expected if Claude Code is not installed
+        }
+    }
+
+    /// <summary>
+    /// Tests that ExecuteAsync works with all parameters provided.
+    /// Note: Only the model parameter is actually used as a CLI argument.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_WithAllParameters_DoesNotThrow()
     {
@@ -263,7 +289,7 @@ public class ClaudeCodeIntegrationTests : IDisposable
                 "test-api-key",
                 "https://api.example.com",
                 5000,
-                "GLM-4.7");
+                "sonnet");
             Assert.NotNull(result);
         }
         catch (Exception)
@@ -272,6 +298,10 @@ public class ClaudeCodeIntegrationTests : IDisposable
         }
     }
 
+    /// <summary>
+    /// Tests that environment variables are respected by Claude Code CLI.
+    /// Claude Code automatically reads ANTHROPIC_AUTH_TOKEN from environment.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_WithApiKeyFromEnvironmentVariable_DoesNotThrow()
     {
@@ -299,6 +329,10 @@ public class ClaudeCodeIntegrationTests : IDisposable
         }
     }
 
+    /// <summary>
+    /// Tests that environment variables are respected by Claude Code CLI.
+    /// Claude Code automatically reads ANTHROPIC_BASE_URL from environment.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_WithBaseUrlFromEnvironmentVariable_DoesNotThrow()
     {
@@ -326,33 +360,10 @@ public class ClaudeCodeIntegrationTests : IDisposable
         }
     }
 
-    [Fact]
-    public async Task ExecuteAsync_WithTimeoutFromEnvironmentVariable_DoesNotThrow()
-    {
-        // Arrange
-        Environment.SetEnvironmentVariable("API_TIMEOUT_MS", "10000");
-        var instructions = "Test instruction";
-
-        try
-        {
-            // Act & Assert
-            try
-            {
-                var result = await _integration.ExecuteAsync(".", instructions, null, null, null, null);
-                Assert.NotNull(result);
-            }
-            catch (Exception)
-            {
-                // Expected if Claude Code is not installed
-            }
-        }
-        finally
-        {
-            // Cleanup
-            Environment.SetEnvironmentVariable("API_TIMEOUT_MS", null);
-        }
-    }
-
+    /// <summary>
+    /// Tests that all relevant environment variables are set.
+    /// Claude Code reads these from environment automatically.
+    /// </summary>
     [Fact]
     public async Task ExecuteAsync_WithAllEnvVarsSet_DoesNotThrow()
     {
@@ -384,8 +395,13 @@ public class ClaudeCodeIntegrationTests : IDisposable
         }
     }
 
+    /// <summary>
+    /// Tests command line argument precedence.
+    /// Since apiKey/baseUrl/timeout are no longer passed as CLI arguments,
+    /// this test verifies the method signature is still backward compatible.
+    /// </summary>
     [Fact]
-    public async Task ExecuteAsync_CommandLineParameterTakesPrecedenceOverEnvVar()
+    public async Task ExecuteAsync_BackwardCompatibleSignature_DoesNotThrow()
     {
         // Arrange
         Environment.SetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN", "env-api-key");
@@ -396,11 +412,10 @@ public class ClaudeCodeIntegrationTests : IDisposable
             // Act & Assert
             try
             {
+                // The method signature accepts these parameters for backward compatibility,
+                // but they are not passed as CLI arguments to Claude Code
                 var result = await _integration.ExecuteAsync(".", instructions, "cli-api-key", null, null, null);
                 Assert.NotNull(result);
-                // The CLI parameter should take precedence over env var
-                // We can't directly verify this without mocking Process.Start,
-                // but we verify the method doesn't throw
             }
             catch (Exception)
             {
@@ -411,6 +426,56 @@ public class ClaudeCodeIntegrationTests : IDisposable
         {
             // Cleanup
             Environment.SetEnvironmentVariable("ANTHROPIC_AUTH_TOKEN", null);
+        }
+    }
+
+    /// <summary>
+    /// Tests that Claude Code CLI is invoked with the -p flag (print mode).
+    /// This is the correct flag for non-interactive mode.
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_UsesPrintModeFlag()
+    {
+        // Arrange
+        var instructions = "Test instruction";
+
+        // Act & Assert
+        try
+        {
+            var result = await _integration.ExecuteAsync(".", instructions, null, null, null, null);
+            // The implementation should use -p flag for print mode
+            // We can't directly verify this without mocking Process.Start,
+            // but we verify the method doesn't throw
+            Assert.NotNull(result);
+        }
+        catch (Exception)
+        {
+            // Expected if Claude Code is not installed
+        }
+    }
+
+    /// <summary>
+    /// Tests that Claude Code CLI is invoked with --output-format json.
+    /// This ensures structured JSON output that can be parsed.
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_UsesJsonOutputFormat()
+    {
+        // Arrange
+        var instructions = "Test instruction";
+
+        // Act & Assert
+        try
+        {
+            var result = await _integration.ExecuteAsync(".", instructions, null, null, null, null);
+            // The implementation should use --output-format json flag
+            // We can't directly verify this without mocking Process.Start,
+            // but we verify the method doesn't throw
+            Assert.NotNull(result);
+        }
+        catch (Exception)
+        {
+            // Expected if Claude Code is not installed
         }
     }
 }

@@ -11,11 +11,15 @@ namespace ProjectManagement.Infrastructure.Tests.Claude;
 public class ClaudeApiServiceTests : IDisposable
 {
     private readonly Mock<ILogger<ClaudeApiService>> _mockLogger;
+    private readonly Mock<IClaudeCodeIntegration> _mockClaudeCodeIntegration;
     private readonly ClaudeApiSettings _settings;
 
     public ClaudeApiServiceTests()
     {
         _mockLogger = new Mock<ILogger<ClaudeApiService>>();
+        _mockClaudeCodeIntegration = new Mock<IClaudeCodeIntegration>();
+        _mockClaudeCodeIntegration.Setup(x => x.IsAvailableAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
         _settings = new ClaudeApiSettings
         {
             ApiKey = "test-api-key",
@@ -33,7 +37,7 @@ public class ClaudeApiServiceTests : IDisposable
     public void Constructor_WithValidParameters_InitializesService()
     {
         // Act
-        var service = new ClaudeApiService(Options.Create(_settings), _mockLogger.Object);
+        var service = new ClaudeApiService(Options.Create(_settings), _mockLogger.Object, _mockClaudeCodeIntegration.Object);
 
         // Assert
         Assert.NotNull(service);
@@ -44,7 +48,7 @@ public class ClaudeApiServiceTests : IDisposable
     {
         // Act & Assert
         // Throws either ArgumentNullException or NullReferenceException
-        Assert.ThrowsAny<Exception>(() => new ClaudeApiService(null!, _mockLogger.Object));
+        Assert.ThrowsAny<Exception>(() => new ClaudeApiService(null!, _mockLogger.Object, _mockClaudeCodeIntegration.Object));
     }
 
     [Fact]
@@ -52,7 +56,7 @@ public class ClaudeApiServiceTests : IDisposable
     {
         // Act & Assert
         // Note: The service accepts null logger (handled by null conditional operator internally)
-        var service = new ClaudeApiService(Options.Create(_settings), null!);
+        var service = new ClaudeApiService(Options.Create(_settings), null!, _mockClaudeCodeIntegration.Object);
         Assert.NotNull(service);
     }
 
@@ -69,7 +73,7 @@ public class ClaudeApiServiceTests : IDisposable
 
         // Act & Assert
         // Service should initialize even with empty key (validation happens at call time)
-        var service = new ClaudeApiService(Options.Create(settings), _mockLogger.Object);
+        var service = new ClaudeApiService(Options.Create(settings), _mockLogger.Object, _mockClaudeCodeIntegration.Object);
         Assert.NotNull(service);
     }
 
@@ -77,7 +81,7 @@ public class ClaudeApiServiceTests : IDisposable
     public async Task RefineWorkItemAsync_WithValidWorkItem_DoesNotThrow()
     {
         // Arrange
-        var service = new ClaudeApiService(Options.Create(_settings), _mockLogger.Object);
+        var service = new ClaudeApiService(Options.Create(_settings), _mockLogger.Object, _mockClaudeCodeIntegration.Object);
         var workItem = new WorkItem
         {
             Type = WorkItemType.UserStory,
@@ -99,7 +103,7 @@ public class ClaudeApiServiceTests : IDisposable
     public async Task RefineWorkItemAsync_WithNullWorkItem_ThrowsException()
     {
         // Arrange
-        var service = new ClaudeApiService(Options.Create(_settings), _mockLogger.Object);
+        var service = new ClaudeApiService(Options.Create(_settings), _mockLogger.Object, _mockClaudeCodeIntegration.Object);
 
         // Act & Assert
         // The service wraps exceptions in ClaudeIntegrationException
@@ -113,7 +117,7 @@ public class ClaudeApiServiceTests : IDisposable
     public async Task RefineWorkItemAsync_WithCancellation_CancelsOperation()
     {
         // Arrange
-        var service = new ClaudeApiService(Options.Create(_settings), _mockLogger.Object);
+        var service = new ClaudeApiService(Options.Create(_settings), _mockLogger.Object, _mockClaudeCodeIntegration.Object);
         var workItem = new WorkItem
         {
             Type = WorkItemType.UserStory,
@@ -139,7 +143,7 @@ public class ClaudeApiServiceTests : IDisposable
     public async Task RefineWorkItemAsync_WithDifferentWorkItemTypes_HandlesCorrectly(WorkItemType type)
     {
         // Arrange
-        var service = new ClaudeApiService(Options.Create(_settings), _mockLogger.Object);
+        var service = new ClaudeApiService(Options.Create(_settings), _mockLogger.Object, _mockClaudeCodeIntegration.Object);
         var workItem = new WorkItem
         {
             Type = type,
@@ -159,7 +163,7 @@ public class ClaudeApiServiceTests : IDisposable
     public async Task RefineWorkItemAsync_WithLongDescription_HandlesCorrectly()
     {
         // Arrange
-        var service = new ClaudeApiService(Options.Create(_settings), _mockLogger.Object);
+        var service = new ClaudeApiService(Options.Create(_settings), _mockLogger.Object, _mockClaudeCodeIntegration.Object);
         var longDescription = new string('A', 10000);
         var workItem = new WorkItem
         {
@@ -180,7 +184,7 @@ public class ClaudeApiServiceTests : IDisposable
     public async Task RefineWorkItemAsync_WithAcceptanceCriteria_IncludesInPrompt()
     {
         // Arrange
-        var service = new ClaudeApiService(Options.Create(_settings), _mockLogger.Object);
+        var service = new ClaudeApiService(Options.Create(_settings), _mockLogger.Object, _mockClaudeCodeIntegration.Object);
         var workItem = new WorkItem
         {
             Type = WorkItemType.UserStory,
@@ -213,7 +217,7 @@ public class ClaudeApiServiceTests : IDisposable
     public async Task RefineWorkItemAsync_WithVeryHighPriority_HandlesCorrectly()
     {
         // Arrange
-        var service = new ClaudeApiService(Options.Create(_settings), _mockLogger.Object);
+        var service = new ClaudeApiService(Options.Create(_settings), _mockLogger.Object, _mockClaudeCodeIntegration.Object);
         var workItem = new WorkItem
         {
             Type = WorkItemType.UserStory,
@@ -233,7 +237,7 @@ public class ClaudeApiServiceTests : IDisposable
     public async Task RefineWorkItemAsync_WithLowPriority_HandlesCorrectly()
     {
         // Arrange
-        var service = new ClaudeApiService(Options.Create(_settings), _mockLogger.Object);
+        var service = new ClaudeApiService(Options.Create(_settings), _mockLogger.Object, _mockClaudeCodeIntegration.Object);
         var workItem = new WorkItem
         {
             Type = WorkItemType.UserStory,
