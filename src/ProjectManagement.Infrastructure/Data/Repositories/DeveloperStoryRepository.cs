@@ -57,7 +57,7 @@ public class DeveloperStoryRepository : Repository<DeveloperStory>, IDeveloperSt
     {
         // Get all Ready stories with their dependencies (stories they depend on)
         var readyStories = await _dbSet
-            .Include(ds => ds.DependentStories)  // Stories this story depends on
+            .Include(ds => ds.Dependencies)  // Stories this story depends on (blocking dependencies)
             .Where(ds => ds.Status == DeveloperStoryStatus.Ready)
             .OrderBy(ds => ds.Priority)
             .ThenBy(ds => ds.Id)
@@ -65,7 +65,7 @@ public class DeveloperStoryRepository : Repository<DeveloperStory>, IDeveloperSt
 
         // Get the IDs of all required stories (stories that need to be completed first)
         var requiredStoryIds = readyStories
-            .SelectMany(ds => ds.DependentStories)
+            .SelectMany(ds => ds.Dependencies)
             .Select(d => d.RequiredStoryId)
             .Distinct()
             .ToList();
@@ -79,11 +79,11 @@ public class DeveloperStoryRepository : Repository<DeveloperStory>, IDeveloperSt
         return readyStories
             .Where(ds =>
             {
-                if (!ds.DependentStories.Any())
+                if (!ds.Dependencies.Any())
                     return true; // No dependencies, can be executed
 
                 // Check if all required stories are completed
-                return ds.DependentStories.All(d =>
+                return ds.Dependencies.All(d =>
                     requiredStories.TryGetValue(d.RequiredStoryId, out var requiredStory) &&
                     requiredStory.Status == DeveloperStoryStatus.Completed);
             })

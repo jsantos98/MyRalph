@@ -110,8 +110,8 @@ public class DeveloperStoryRepositoryExtendedTests : IDisposable
 
         // Assert
         Assert.NotNull(result);
-        Assert.Single(result.DependentStories);
-        Assert.Equal(story1.Id, result.DependentStories.First().RequiredStoryId);
+        Assert.Single(result.Dependencies);
+        Assert.Equal(story1.Id, result.Dependencies.First().RequiredStoryId);
     }
 
     [Fact]

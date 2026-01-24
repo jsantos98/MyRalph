@@ -163,10 +163,9 @@ public class ClaudeCodeIntegration : IClaudeCodeIntegration
         // Add print mode flag (non-interactive)
         arguments.Add("-p");
 
-        // Add continue flag with session ID
+        // Add continue flag (continues the most recent conversation)
+        // Note: --continue doesn't use --session-id, that's only for --resume
         arguments.Add("--continue");
-        arguments.Add("--session-id");
-        arguments.Add(sessionId);
 
         // Add output format as JSON for structured parsing
         arguments.Add("--output-format");
@@ -203,12 +202,13 @@ public class ClaudeCodeIntegration : IClaudeCodeIntegration
             startInfo.Environment["ANTHROPIC_BASE_URL"] = effectiveBaseUrl;
         }
 
-        _logger.LogInformation("Continuing Claude Code session {SessionId} in {Directory}", sessionId, workingDirectory);
+        _logger.LogInformation("Continuing Claude Code conversation in {Directory}", workingDirectory);
 
         var result = await ExecuteProcessAsync(startInfo, cancellationToken);
 
-        // Preserve the session ID
-        result.SessionId = sessionId;
+        // Try to extract session ID from the response (may be present in some cases)
+        var extractedSessionId = ExtractSessionId(result.StandardOutput);
+        result.SessionId = extractedSessionId ?? sessionId;
 
         return result;
     }

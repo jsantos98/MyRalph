@@ -99,6 +99,10 @@ public class ClaudeApiService : IClaudeApiService
             // Parse the final JSON response
             var resultContent = ParseCliResponse(refinementResult.StandardOutput);
 
+            _logger.LogInformation("Turn 2 response length: {Length} chars", resultContent.Length);
+            _logger.LogInformation("Turn 2 response (first 1000 chars): {Content}",
+                resultContent.Substring(0, Math.Min(1000, resultContent.Length)));
+
             // Extract JSON from the result content (handle markdown code blocks)
             var jsonContent = ExtractJsonFromResponse(resultContent);
 
@@ -144,9 +148,16 @@ public class ClaudeApiService : IClaudeApiService
         sb.AppendLine("For this work item, I need you to:");
         sb.AppendLine("1. Analyze the requirements and identify what information you need");
         sb.AppendLine("2. List 3-5 clarifying questions that would help create better developer stories");
-        sb.AppendLine("3. Identify any potential technical considerations or edge cases");
+        sb.AppendLine("3. Identify the specific files, classes, and methods that will likely need to be modified");
+        sb.AppendLine("4. Identify any potential technical considerations or edge cases");
         sb.AppendLine();
-        sb.AppendLine("For each question, explain WHY you need this information.");
+        sb.AppendLine("IMPORTANT for creating self-contained instructions:");
+        sb.AppendLine("- Focus on SPECIFIC files that need to be modified (e.g., 'src/ProjectManagement.CLI/Commands/CreateItemCommand.cs')");
+        sb.AppendLine("- Identify the exact classes and methods involved");
+        sb.AppendLine("- Consider the existing codebase structure to ensure stories are atomic and focused");
+        sb.AppendLine("- Think about which stories can be done independently without touching others");
+        sb.AppendLine();
+        sb.AppendLine("For each question, explain WHY you need this information and HOW it will help create better, more focused developer stories.");
         sb.AppendLine();
         sb.AppendLine("Do NOT output JSON yet. Just provide your analysis and questions in plain text.");
         sb.AppendLine();
@@ -164,7 +175,7 @@ public class ClaudeApiService : IClaudeApiService
 
         sb.AppendLine($"**Priority:** {workItem.Priority} (1=highest, 9=lowest)");
         sb.AppendLine();
-        sb.AppendLine("Please analyze this work item and provide your questions.");
+        sb.AppendLine("Please analyze this work item and provide your questions, including specific file paths where relevant.");
 
         return sb.ToString();
     }
@@ -174,60 +185,40 @@ public class ClaudeApiService : IClaudeApiService
         var typeText = workItem.Type == WorkItemType.UserStory ? "User Story" : "Bug";
         var sb = new System.Text.StringBuilder();
 
-        sb.AppendLine("Thank you for your analysis. Now, based on your understanding of the work item, please break it down into detailed developer stories.");
+        sb.AppendLine("Based on your previous analysis, break down this work item into detailed developer stories.");
         sb.AppendLine();
-        sb.AppendLine("For each work item, create a set of developer stories with the following types:");
-        sb.AppendLine("- Implementation (0): Main feature/fix implementation");
-        sb.AppendLine("- UnitTests (1): Unit tests for the implementation");
-        sb.AppendLine("- FeatureTests (2): Integration/feature tests");
-        sb.AppendLine("- Documentation (3): Documentation updates");
+        sb.AppendLine("IMPORTANT: Make reasonable assumptions for any unanswered questions and proceed with generating the stories.");
+        sb.AppendLine("Do not ask more questions - provide actionable developer stories now.");
         sb.AppendLine();
-        sb.AppendLine("For each developer story, provide:");
-        sb.AppendLine("- title: A concise, descriptive title");
-        sb.AppendLine("- description: A brief description of what needs to be done");
-        sb.AppendLine("- instructions: Detailed step-by-step implementation instructions");
-        sb.AppendLine("- storyType: The type of story (0-3)");
+        sb.AppendLine("Story types: 0=Implementation, 1=UnitTests, 2=FeatureTests, 3=Documentation");
         sb.AppendLine();
-        sb.AppendLine("Also identify dependencies between stories using:");
-        sb.AppendLine("- dependentStoryIndex: Index of the story that has the dependency");
-        sb.AppendLine("- requiredStoryIndex: Index of the story that must complete first");
-        sb.AppendLine("- description: Why this dependency exists");
+        sb.AppendLine("For each story, provide title, description, instructions, and storyType.");
         sb.AppendLine();
-        sb.AppendLine("Return your response as a JSON object with this structure:");
+        sb.AppendLine("CRITICAL: Instructions must be:");
+        sb.AppendLine("- Self-contained (include all file paths and context needed)");
+        sb.AppendLine("- Implementation stories ONLY modify implementation files");
+        sb.AppendLine("- Test stories ONLY modify test files");
+        sb.AppendLine("- Specific about what to change and where");
+        sb.AppendLine("- No codebase scanning required");
+        sb.AppendLine("- Use plain text for instructions, avoid backslashes in paths");
+        sb.AppendLine();
+        sb.AppendLine("Dependencies: Use story indices (0-based) to define what must complete first.");
+        sb.AppendLine("IMPORTANT: No story should depend on itself (no self-blocking).");
+        sb.AppendLine();
+        sb.AppendLine("Return ONLY valid JSON matching this structure:");
         sb.AppendLine("{");
         sb.AppendLine("  \"developerStories\": [");
         sb.AppendLine("    { \"title\": \"...\", \"description\": \"...\", \"instructions\": \"...\", \"storyType\": 0 },");
         sb.AppendLine("    ...");
         sb.AppendLine("  ],");
         sb.AppendLine("  \"dependencies\": [");
-        sb.AppendLine("    { \"dependentStoryIndex\": 0, \"requiredStoryIndex\": 1, \"description\": \"...\" },");
+        sb.AppendLine("    { \"dependentStoryIndex\": 1, \"requiredStoryIndex\": 0, \"description\": \"...\" },");
         sb.AppendLine("    ...");
         sb.AppendLine("  ],");
-        sb.AppendLine("  \"analysis\": \"Brief summary of your approach...\"");
+        sb.AppendLine("  \"analysis\": \"...\"");
         sb.AppendLine("}");
         sb.AppendLine();
-        sb.AppendLine("Ensure that:");
-        sb.AppendLine("1. Implementation stories come before their corresponding test stories");
-        sb.AppendLine("2. Each story is atomic and can be completed independently (aside from dependencies)");
-        sb.AppendLine("3. Instructions are detailed enough for autonomous implementation");
-        sb.AppendLine("4. Dependencies are minimized where possible");
-        sb.AppendLine("5. NO STORY SHOULD DEPEND ON ITSELF (no self-blocking)");
-        sb.AppendLine();
-        sb.AppendLine($"# {typeText}: {workItem.Title}");
-        sb.AppendLine();
-        sb.AppendLine($"**Description:** {workItem.Description}");
-        sb.AppendLine();
-
-        if (!string.IsNullOrWhiteSpace(workItem.AcceptanceCriteria))
-        {
-            sb.AppendLine($"**Acceptance Criteria:**");
-            sb.AppendLine(workItem.AcceptanceCriteria);
-            sb.AppendLine();
-        }
-
-        sb.AppendLine($"**Priority:** {workItem.Priority} (1=highest, 9=lowest)");
-        sb.AppendLine();
-        sb.AppendLine("Please break this down into developer stories following the specified format. Output ONLY the JSON object, no markdown formatting.");
+        sb.AppendLine("No markdown code blocks, no extra text - ONLY the JSON object.");
 
         return sb.ToString();
     }

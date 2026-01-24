@@ -58,7 +58,9 @@ public class RefineItemCommand : AsyncCommand<RefineItemCommand.Settings>
             if (!string.IsNullOrEmpty(result.Analysis))
             {
                 AnsiConsole.MarkupLine($"\n[bold]Claude's Analysis:[/]");
-                AnsiConsole.MarkupLine($"[dim]{result.Analysis}[/]");
+                // Escape the analysis to prevent Spectre.Console from interpreting brackets as markup
+                var escapedAnalysis = Markup.Escape(result.Analysis);
+                AnsiConsole.MarkupLine($"[dim]{escapedAnalysis}[/]");
             }
         }
         catch (Exception ex)

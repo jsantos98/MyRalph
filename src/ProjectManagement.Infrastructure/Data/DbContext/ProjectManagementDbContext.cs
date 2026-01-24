@@ -141,13 +141,15 @@ public class ProjectManagementDbContext : Microsoft.EntityFrameworkCore.DbContex
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
 
+            // DependentStory → this story's Dependencies collection (stories that block this one)
             entity.HasOne(e => e.DependentStory)
-                .WithMany(ds => ds.DependentStories)
+                .WithMany(ds => ds.Dependencies)
                 .HasForeignKey(e => e.DependentStoryId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // RequiredStory → this story's DependentStories collection (stories that this story blocks)
             entity.HasOne(e => e.RequiredStory)
-                .WithMany(ds => ds.Dependencies)
+                .WithMany(ds => ds.DependentStories)
                 .HasForeignKey(e => e.RequiredStoryId)
                 .OnDelete(DeleteBehavior.Restrict);
 

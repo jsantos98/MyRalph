@@ -104,20 +104,40 @@ public class RefinementService : IRefinementService
 
             await _unitOfWork.CommitAsync(cancellationToken);
 
+            // Log the story IDs after commit
+            _logger.LogInformation("Stories created with database IDs:");
+            for (int i = 0; i < stories.Count; i++)
+            {
+                _logger.LogInformation("  Index {Index}: Story ID = {StoryId}, Title = {Title}",
+                    i, stories[i].Id, stories[i].Title);
+            }
+
             // Create dependencies
             var dependencies = new List<DeveloperStoryDependency>();
+            _logger.LogInformation("Processing {Count} dependencies from Claude", claudeResult.Dependencies.Count);
+
             foreach (var dep in claudeResult.Dependencies)
             {
+                // Skip self-blocking dependencies (a story depending on itself)
+                // Check at the index level before looking up the actual stories
+                if (dep.DependentStoryIndex == dep.RequiredStoryIndex)
+                {
+                    _logger.LogWarning("Skipping self-blocking dependency at index {Index}", dep.DependentStoryIndex);
+                    continue;
+                }
+
+                // Validate indices are within range
+                if (dep.DependentStoryIndex < 0 || dep.DependentStoryIndex >= stories.Count ||
+                    dep.RequiredStoryIndex < 0 || dep.RequiredStoryIndex >= stories.Count)
+                {
+                    _logger.LogError("Invalid dependency indices: Dependent={Dependent}, Required={Required}, StoryCount={Count}",
+                        dep.DependentStoryIndex, dep.RequiredStoryIndex, stories.Count);
+                    continue;
+                }
+
                 if (storyMap.TryGetValue(dep.DependentStoryIndex, out var dependentStory) &&
                     storyMap.TryGetValue(dep.RequiredStoryIndex, out var requiredStory))
                 {
-                    // Skip self-blocking dependencies (a story depending on itself)
-                    if (dependentStory.Id == requiredStory.Id)
-                    {
-                        _logger.LogWarning("Skipping self-blocking dependency for Story {StoryId}", dependentStory.Id);
-                        continue;
-                    }
-
                     // Skip duplicate dependencies
                     if (dependencies.Any(d =>
                         d.DependentStoryId == dependentStory.Id &&
@@ -127,6 +147,9 @@ public class RefinementService : IRefinementService
                             dependentStory.Id, requiredStory.Id);
                         continue;
                     }
+
+                    _logger.LogInformation("Creating dependency: Story {DependentId} (index {DependentIndex}) -> Story {RequiredId} (index {RequiredIndex})",
+                        dependentStory.Id, dep.DependentStoryIndex, requiredStory.Id, dep.RequiredStoryIndex);
 
                     var dependency = new DeveloperStoryDependency
                     {
@@ -138,22 +161,31 @@ public class RefinementService : IRefinementService
                     await _dependencyRepository.AddAsync(dependency, cancellationToken);
                     dependencies.Add(dependency);
                 }
+                else
+                {
+                    _logger.LogError("Failed to find stories for dependency: Dependent index {DependentIndex}, Required index {RequiredIndex}",
+                        dep.DependentStoryIndex, dep.RequiredStoryIndex);
+                }
             }
 
-            // Update story statuses based on dependencies
+            // Update story statuses based on in-memory dependencies (not yet committed)
             foreach (var story in stories)
             {
-                var storyWithDeps = await _developerStoryRepository.GetWithDependenciesAsync(story.Id, cancellationToken);
-                if (storyWithDeps?.Dependencies.Any() == true)
+                // Check if this story has any incoming dependencies from the in-memory list
+                var hasBlockingDependencies = dependencies.Any(d => d.DependentStoryId == story.Id);
+
+                if (hasBlockingDependencies)
                 {
-                    storyWithDeps.UpdateStatus(DeveloperStoryStatus.Blocked);
-                    await _developerStoryRepository.UpdateAsync(storyWithDeps, cancellationToken);
+                    story.UpdateStatus(DeveloperStoryStatus.Blocked);
+                    _logger.LogInformation("Story {StoryId} ({Title}) is Blocked by dependencies", story.Id, story.Title);
                 }
                 else
                 {
-                    storyWithDeps!.UpdateStatus(DeveloperStoryStatus.Ready);
-                    await _developerStoryRepository.UpdateAsync(storyWithDeps, cancellationToken);
+                    story.UpdateStatus(DeveloperStoryStatus.Ready);
+                    _logger.LogInformation("Story {StoryId} ({Title}) is Ready (no blocking dependencies)", story.Id, story.Title);
                 }
+
+                await _developerStoryRepository.UpdateAsync(story, cancellationToken);
             }
 
             await _unitOfWork.CommitAsync(cancellationToken);
