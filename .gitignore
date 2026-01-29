@@ -6,4 +6,4 @@ src/ProjectManagement.CLI/obj/
 src/ProjectManagement.Core/obj/
 src/ProjectManagement.Infrastructure/obj/
 tests/*/obj/
-*.v3.ncrunchsolution*
+*.v3.ncrunchsolution*.claude/settings.local.json
