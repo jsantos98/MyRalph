@@ -129,6 +129,10 @@ TestResults/
 *.trx
 *.coverage
 *.coveragexml
+test-results/
+playwright-report/
+coverage/
+*.coverage.cobertura.xml
 
 # ====================================
 # Database
