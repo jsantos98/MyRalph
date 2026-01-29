@@ -1,11 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "WebSearch",
-      "Bash(dotnet:*)",
-      "Bash(find:*)",
-      "Bash(ls:*)",
-      "Bash(tree:*)"
+      "Skill(agent-creator)",
+      "WebSearch"
     ]
   }
 }

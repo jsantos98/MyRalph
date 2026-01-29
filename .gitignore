@@ -1,9 +1,0 @@
-.NCrunch_ProjectManagement/
-.vs/
-bin/
-src/ProjectManagement.Application/obj/
-src/ProjectManagement.CLI/obj/
-src/ProjectManagement.Core/obj/
-src/ProjectManagement.Infrastructure/obj/
-tests/*/obj/
-*.v3.ncrunchsolution*
