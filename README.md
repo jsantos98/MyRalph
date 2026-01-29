@@ -1,214 +1,295 @@
-# Project Management CLI
+# FelizesTracker
 
-A .NET CLI-based project management system that integrates Claude AI for autonomous development workflow management.
+A comprehensive tracking system built with Clean Architecture principles on .NET 8 backend and React 18 with TypeScript frontend.
 
-## Purpose
+## Architecture
 
-This tool helps manage software development projects by:
-- Creating and tracking User Stories and Bugs
-- Breaking down work items into developer stories using Claude AI
-- Managing dependencies between developer stories
-- Orchestrating implementation workflow with Git integration
+This project follows **Clean Architecture (Onion)** principles and is organized as a monorepo with separate backend and frontend projects.
 
-## Requirements
+### Backend Architecture (.NET 8)
 
-- .NET 9.0 SDK or later
-- SQLite (included with EF Core)
-- Claude API key for AI-powered refinement
-- Git (for branch/worktree management)
-- Claude Code CLI (optional, for autonomous implementation)
-
-## Installation
-
-1. Clone the repository
-2. Restore dependencies:
-   ```bash
-   dotnet restore
-   ```
-3. Build the solution:
-   ```bash
-   dotnet build
-   ```
-
-## Configuration
-
-Create an `appsettings.json` file or use `dotnet user-secrets`:
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Data Source=projectmanagement.db"
-  },
-  "Claude": {
-    "ApiKey": "your-anthropic-api-key",
-    "Model": "claude-sonnet-4-20250514",
-    "MaxTokens": 4096,
-    "Timeout": "00:30:00"
-  },
-  "Git": {
-    "DefaultBranch": "main",
-    "WorktreeBasePath": "./worktrees"
-  }
-}
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Presentation                         │
+│                 (Api - Controllers, DTOs)               │
+└─────────────────────┬───────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────┐
+│                   Application                           │
+│              (Services, Use Cases, Interfaces)          │
+└─────────────────────┬───────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────┐
+│                     Domain                              │
+│            (Entities, Value Objects)                    │
+└─────────────────────┬───────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────┐
+│                  Infrastructure                         │
+│        (EF Core, External APIs, Data Access)            │
+└─────────────────────────────────────────────────────────┘
 ```
 
-Set your Claude API key using user-secrets:
+### Project Structure
+
+```
+MyRalph/
+├── backend/
+│   └── src/
+│       ├── FelizesTracker.sln           # Solution file
+│       ├── FelizesTracker.Api/          # Presentation layer - Web API
+│       ├── FelizesTracker.Application/  # Application layer - Business logic
+│       ├── FelizesTracker.Core/         # Domain layer - Entities and value objects
+│       └── FelizesTracker.Infrastructure/# Infrastructure - Data access, external services
+├── frontend/
+│   ├── src/                            # React application source
+│   ├── public/                         # Static assets
+│   ├── package.json                    # NPM dependencies
+│   └── vite.config.ts                  # Vite configuration
+├── .editorconfig                       # PO Team code formatting standards
+├── .gitignore                          # Git ignore rules
+└── README.md                           # This file
+```
+
+## Tech Stack
+
+### Backend
+- **.NET 8** - Latest LTS .NET framework
+- **ASP.NET Core Web API** - RESTful API framework
+- **Entity Framework Core** - ORM for data access
+- **C# 12** - Language features
+- **xUnit** - Testing framework
+- **Clean Architecture** - Onion architecture pattern
+
+### Frontend
+- **React 18** - UI library
+- **TypeScript 5** - Type-safe JavaScript
+- **Vite 5** - Build tool and dev server
+- **React Router** - Client-side routing
+- **Axios** - HTTP client
+- **ESLint + Prettier** - Code quality and formatting
+
+## Local Development Setup
+
+### Prerequisites
+
+#### Backend
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or later
+- Any IDE (Visual Studio 2022, VS Code with C# extension, or Rider)
+
+#### Frontend
+- [Node.js 18+](https://nodejs.org/) (LTS version recommended)
+- npm or yarn
+
+### Getting Started
+
+#### 1. Clone the Repository
+
 ```bash
-dotnet user-secrets init
-dotnet user-secrets set "Claude:ApiKey" "your-api-key-here"
+git clone <repository-url>
+cd MyRalph
 ```
 
-## Commands
+#### 2. Backend Setup
 
-### Create Work Item
 ```bash
-pm create
-```
-Interactive prompts to create a new User Story or Bug with:
-- Type (UserStory/Bug)
-- Title
-- Description
-- Acceptance Criteria (optional)
-- Priority (1-9, default 5)
+cd backend/src
 
-### Refine Work Item
+# Restore NuGet packages
+dotnet restore
+
+# Build the solution
+dotnet build
+
+# Run the API (from Api project directory)
+cd FelizesTracker.Api
+dotnet run
+```
+
+The API will be available at `http://localhost:5000`
+
+#### 3. Frontend Setup
+
 ```bash
-pm refine <ID>
+# From repository root
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
 ```
-Uses Claude AI to break down a User Story into developer stories:
-- Implementation stories
-- Unit test stories
-- Feature test stories
-- Documentation stories
 
-Also sets up dependencies between stories based on Claude's analysis.
+The frontend will be available at `http://localhost:5173`
 
-### Select Next Story
+### Available Scripts
+
+#### Backend
+
 ```bash
-pm next
-```
-Displays the next available developer story based on:
-- Priority (highest first)
-- Dependency resolution (only stories with completed dependencies)
-- Business rules (only one UserStory can be InProgress at a time)
+# Build the entire solution
+dotnet build
 
-### Implement Story
+# Run tests
+dotnet test
+
+# Run the API
+cd FelizesTracker.Api
+dotnet run
+
+# Restore packages
+dotnet restore
+
+# Clean build artifacts
+dotnet clean
+```
+
+#### Frontend
+
 ```bash
-pm implement <STORY_ID> <MAIN_BRANCH>
-```
-Implements a developer story:
-1. Creates Git branch for the parent WorkItem (if needed)
-2. Creates Git worktree for the story
-3. Marks story as InProgress
-4. Executes Claude Code in non-interactive mode
-5. On success: marks story as Completed, removes worktree
-6. On failure: marks story as Error with error message
+# Install dependencies
+npm install
 
-### List Work Items
-```bash
-pm list [status]
-```
-Lists all work items, optionally filtered by status:
-- `pm list` - all items
-- `pm list pending` - only pending items
-- `pm list refining` - only items being refined
-- `pm list refined` - only refined items
-- `pm list inprogress` - only items in progress
-- `pm list completed` - only completed items
+# Start development server (with hot module replacement)
+npm run dev
 
-## Database Schema
+# Build for production
+npm run build
 
-### WorkItem
-- `Id`: Unique identifier (auto-increment)
-- `Type`: UserStory (0) or Bug (1)
-- `Title`, `Description`, `AcceptanceCriteria`
-- `Priority`: 1-9 (1=highest, default 5)
-- `Status`: Pending, Refining, Refined, InProgress, Completed, Error
-- `CreatedAt`, `UpdatedAt`: Timestamps
-- `ErrorMessage`: Error details if status is Error
+# Preview production build
+npm run preview
 
-### DeveloperStory
-- `Id`: Unique identifier (separate sequence from WorkItem)
-- `WorkItemId`: Reference to parent WorkItem
-- `StoryType`: Implementation, UnitTests, FeatureTests, Documentation
-- `Title`, `Description`, `Instructions`
-- `Priority`: Inherited from parent WorkItem
-- `Status`: Pending, Ready, InProgress, Completed, Error, Blocked
-- `GitBranch`, `GitWorktree`: Git tracking
-- `StartedAt`, `CompletedAt`: Execution timestamps
-- `ErrorMessage`, `Metadata`: Additional info
+# Run type checking
+npm run type-check
 
-### DeveloperStoryDependency
-- `DependentStoryId`: Story that has the dependency
-- `RequiredStoryId`: Story that must complete first
-- `Description`: Why this dependency exists
+# Run linter
+npm run lint
 
-## State Transitions
+# Run linter with auto-fix
+npm run lint:fix
 
-### WorkItem
-```
-Pending -> Refining -> Refined -> InProgress -> Completed
-    |          |          |           |
-    +----------+----------+-----------+-> Error
+# Run tests
+npm run test
 ```
 
-### DeveloperStory
-```
-Pending -> Ready -> InProgress -> Completed
-    |         |          |
-    +---------+----------+----> Blocked
-                           |
-                           v
-                         Error
-```
+## Development Workflow
 
-## Business Rules
+### Code Formatting
 
-1. **Single Active User Story**: Only one UserStory can be `InProgress` at a time
-2. **Dependency Resolution**: A story can only be `Ready` if all its dependencies are `Completed`
-3. **Priority Ordering**: Stories are selected by Priority (1=highest), then by ID (FIFO)
-4. **Bug InProgress**: Bugs cannot be `InProgress` (they're worked on differently)
+This project uses `.editorconfig` for consistent code formatting across the team. Most modern IDEs will apply these settings automatically.
+
+- **Visual Studio**: Settings are applied automatically
+- **VS Code**: Install the [EditorConfig](https://marketplace.visualstudio.com/items?itemName=EditorConfig.EditorConfig) extension
+- **JetBrains IDEs**: Settings are applied automatically
+
+### Backend Development
+
+1. **Domain Layer (Core)**: Add entities, value objects, and domain logic
+2. **Application Layer**: Add interfaces, use cases, and business logic
+3. **Infrastructure Layer**: Implement interfaces from Application layer
+4. **API Layer**: Create controllers and DTOs to expose functionality
+
+### Frontend Development
+
+1. **Components**: Create reusable React components in `src/components`
+2. **Pages**: Add page-level components in `src/pages`
+3. **Services**: Create API client services in `src/services`
+4. **Hooks**: Create custom React hooks in `src/hooks`
+5. **Types**: Define TypeScript types in `src/types`
 
 ## Testing
 
-Run all tests:
+### Backend Tests
+
 ```bash
+cd backend/src
 dotnet test
 ```
 
-Run tests with coverage:
+### Frontend Tests
+
 ```bash
-dotnet test --collect:"XPlat Code Coverage" --results-directory ./TestResults
+cd frontend
+npm run test
 ```
 
-## Building
+## Code Quality
 
-Build the CLI executable:
-```bash
-dotnet publish src/ProjectManagement.CLI -c Release -o ./publish
-```
+### PO Team Standards
 
-Run the published CLI:
-```bash
-./publish/ProjectManagement.CLI.exe
-```
+This project follows PO Team architecture patterns and coding standards:
 
-## Project Structure
+- Clean Architecture principles
+- Repository pattern for data access
+- Dependency injection throughout
+- Specification pattern for complex queries
+- Domain events for cross-cutting concerns
+- 80%+ test coverage requirement
+- Semantic versioning for releases
 
-```
-ProjectManagement.sln
-├── src/
-│   ├── ProjectManagement.Core/         # Domain models, interfaces, enums
-│   ├── ProjectManagement.Infrastructure/ # EF Core, Git, Claude integration
-│   ├── ProjectManagement.Application/    # Business logic and services
-│   └── ProjectManagement.CLI/           # Spectre.Console commands
-└── tests/
-    ├── ProjectManagement.Core.Tests/
-    ├── ProjectManagement.Infrastructure.Tests/
-    ├── ProjectManagement.Application.Tests/
-    └── ProjectManagement.CLI.Tests/
-```
+### Code Review Checklist
+
+- [ ] Code follows Clean Architecture principles
+- [ ] Dependencies point inward (no violations)
+- [ ] Tests included with 80%+ coverage
+- [ ] TypeScript strict mode compliance
+- [ ] EditorConfig standards applied
+- [ ] No hardcoded configuration values
+- [ ] Proper error handling and logging
+- [ ] Documentation updated as needed
+
+## Branch Strategy
+
+- `main` - Production branch
+- `feature/felizes-tracker-bootstrap` - Current feature branch
+- `feature/*` - Feature branches
+- `bugfix/*` - Bug fix branches
+
+## Contributing
+
+1. Create a feature branch from `main`
+2. Implement your feature following Clean Architecture
+3. Write tests with 80%+ coverage
+4. Ensure code formatting follows `.editorconfig`
+5. Submit pull request for review
+6. Address feedback from code review
+7. Merge after approval
 
 ## License
 
-MIT License
+[Add your license here]
+
+## Contact
+
+[Add contact information]
+
+## Roadmap
+
+### Phase 1: Bootstrap (Current)
+- [x] Repository structure
+- [x] Backend solution setup
+- [x] Frontend project setup
+- [ ] EditorConfig configuration
+- [ ] Git ignore configuration
+- [ ] README documentation
+
+### Phase 2: Core Features
+- [ ] Authentication & Authorization
+- [ ] User management
+- [ ] Dashboard
+- [ ] Basic tracking features
+
+### Phase 3: Advanced Features
+- [ ] Real-time updates
+- [ ] Reporting & Analytics
+- [ ] Notifications
+- [ ] Mobile responsiveness
+
+## Resources
+
+- [.NET Documentation](https://docs.microsoft.com/en-us/dotnet/)
+- [React Documentation](https://react.dev/)
+- [TypeScript Documentation](https://www.typescriptlang.org/docs/)
+- [Vite Documentation](https://vitejs.dev/)
+- [Clean Architecture by Robert C. Martin](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
