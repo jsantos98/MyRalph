@@ -10,7 +10,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
-    "test": "vitest",
+    "test": "vitest --config vitest.config.ts",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "preview": "vite preview"

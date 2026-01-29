@@ -3,7 +3,7 @@
  * Handles all HTTP communication with the backend API
  */
 
-import axios, { AxiosError, AxiosInstance } from 'axios';
+import axios, { type AxiosError, type AxiosInstance } from 'axios';
 import type {
   HealthStatus,
   HealthCheckResponse,
