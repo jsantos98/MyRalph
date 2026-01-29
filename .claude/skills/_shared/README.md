@@ -86,20 +86,20 @@ As a Product Owner, here's how to implement a feature:
 
 ### 3. Asana Integration Setup
 
-The PM agent manages Asana for project tracking:
+The PM agent manages Asana for project tracking using the **Asana MCP Server**:
 
-```bash
-# Set up Asana credentials
-export ASANA_PAT="your_personal_access_token"
-export ASANA_WORKSPACE_GID="your_workspace_id"
-export ASANA_PROJECT_GID="your_project_id"
-```
+**Prerequisites:**
+- Asana MCP server must be configured in Claude Code
+- The MCP server handles authentication via its configuration
 
 The PM will:
-- Create sections for each feature
+- Discover workspaces and projects via MCP
 - Create tasks for each development item
-- Update task status throughout development
-- Add comments for milestones
+- Update task status via comments
+- Set task dependencies
+- Add milestone comments
+
+**Note:** The PM skill now uses native Asana MCP tools instead of curl commands or environment variables.
 
 ### 4. Git Workflow
 
@@ -333,11 +333,6 @@ Commit format: `[AGENT-ID] type(scope): description`
 ### Required Environment Variables
 
 ```bash
-# Asana Integration
-export ASANA_PAT="your_personal_access_token"
-export ASANA_WORKSPACE_GID="your_workspace_id"
-export ASANA_PROJECT_GID="your_project_id"
-
 # Database
 export DATABASE_URL="postgresql://user:pass@localhost:5432/dbname"
 
@@ -348,6 +343,9 @@ export VITE_API_URL="http://localhost:5000"
 export JWT_SECRET="your_jwt_secret_here"
 export JWT_ISSUER="https://api.example.com"
 export JWT_AUDIENCE="https://example.com"
+
+# Asana Integration (via MCP Server - configured in Claude Code settings)
+# No environment variables needed - MCP server handles authentication
 ```
 
 ## Best Practices

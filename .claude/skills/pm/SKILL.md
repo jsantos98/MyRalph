@@ -289,31 +289,65 @@ Transform feature requirements from the Product Owner (PO) into delivered, valid
 
 ## Asana Integration Commands
 
-### Using Asana with Bash
+### Using Asana MCP Server Tools
 
-```bash
-# Set your Asana Personal Access Token
-export ASANA_PAT="your_pat_here"
-export ASANA_WORKSPACE_GID="your_workspace_gid"
-export ASANA_PROJECT_GID="your_project_gid"
+The PM agent uses native Asana MCP server tools instead of curl commands. The MCP tools provide cleaner, more reliable integration.
 
-# Create a section (feature)
-curl -X POST https://app.asana.com/api/1.0/sections \
-  -H "Authorization: Bearer $ASANA_PAT" \
-  -d "project=$ASANA_PROJECT_GID" \
-  -d "name=Feature: User Authentication"
+#### Key MCP Tools Available
 
-# Create a task
-curl -X POST https://app.asana.com/api/1.0/tasks \
-  -H "Authorization: Bearer $ASANA_PAT" \
-  -d "projects[0]=$ASANA_PROJECT_GID" \
-  -d "name=[BE] Implement JWT authentication endpoint" \
-  -d "notes=Acceptance Criteria:\n- Endpoint accepts username/password\n- Returns JWT access + refresh tokens\n- Tokens are stored securely\n- Unit tests with 90%+ coverage"
+| MCP Tool | Purpose | When to Use |
+|----------|---------|-------------|
+| `asana_list_workspaces` | Get all workspaces | First call to discover workspace GIDs |
+| `asana_get_projects` | List projects in workspace | Find target project |
+| `asana_get_project` | Get project details | Validate project, get custom fields |
+| `asana_get_project_sections` | List sections in project | Find or create feature sections |
+| `asana_create_task` | Create a new task | Create development tasks |
+| `asana_get_task` | Get task details | Fetch task info, dependencies |
+| `asana_update_task` | Update task properties | Change assignee, due date, notes |
+| `asana_create_task_story` | Add comment to task | Status updates, milestones |
+| `asana_search_tasks` | Search for tasks | Find existing tasks |
+| `asana_set_task_dependencies` | Set prerequisites | Define task dependencies |
+| `asana_set_task_dependents` | Set blocked tasks | Define what this task blocks |
+| `asana_delete_task` | Delete a task | Remove duplicate tasks |
+| `asana_get_user` | Get user info | Find user IDs for assignment |
 
-# Update task status (via custom field or comments)
-curl -X POST https://app.asana.com/api/1.0/tasks/$TASK_ID/stories \
-  -H "Authorization: Bearer $ASANA_PAT" \
-  -d "text=Status: In Progress\n\nCommit: abc123\nCoverage: 92%"
+#### Setup Pattern
+
+```
+1. First, always get workspace: asana_list_workspaces
+2. Get projects: asana_get_projects(workspace="<workspace_gid>")
+3. Get sections: asana_get_project_sections(project_id="<project_gid>")
+4. Now you can create/update tasks with proper context
+```
+
+#### Example: Create Feature Section and Tasks
+
+```
+# Get workspace
+asana_list_workspaces()
+
+# Get project
+asana_get_projects(workspace="<workspace_gid>", team="<team_gid>")
+
+# Create a task in a section
+asana_create_task(
+  name="[BE] Implement JWT authentication endpoint",
+  project_id="<project_gid>",
+  section_id="<section_gid>",
+  html_notes="<h3>Acceptance Criteria:</h3><ul><li>Endpoint accepts username/password</li><li>Returns JWT access + refresh tokens</li></ul>"
+)
+
+# Add status comment
+asana_create_task_story(
+  task_id="<task_gid>",
+  text="Status: In Progress\n\nCommit: abc123\nCoverage: 92%"
+)
+
+# Set dependencies
+asana_set_task_dependencies(
+  task_id="<task_gid>",
+  dependencies=["<depends_on_task_gid>"]
+)
 ```
 
 ### Asana Status Mappings

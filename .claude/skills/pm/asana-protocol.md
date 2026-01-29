@@ -1,118 +1,132 @@
 # Asana Integration Protocol for PM
 
-This document defines the Asana API integration patterns and commands for the Senior Project Manager.
+This document defines the Asana MCP server integration patterns and commands for the Senior Project Manager.
 
 ## Prerequisites
 
 ### Setup
 
-1. **Get your Asana Personal Access Token (PAT)**
-   - Go to https://app.asana.com/-/developer_console
-   - Create a new Personal Access Token
-   - Copy and store securely
+1. **Asana MCP Server must be configured**
+   - The Asana MCP server should be installed and configured in Claude Code
+   - Environment variables (ASANA_PAT, etc.) should be set in MCP config
 
-2. **Identify your Workspace and Project GIDs**
-   ```bash
-   # List workspaces
-   curl -X GET https://app.asana.com/api/1.0/workspaces \
-     -H "Authorization: Bearer $ASANA_PAT"
+2. **First-Time Pattern - Always Start Here**
+   ```
+   Step 1: List available workspaces
+   Tool: asana_list_workspaces
 
-   # List projects in workspace
-   curl -X GET https://app.asana.com/api/1.0/projects \
-     -H "Authorization: Bearer $ASANA_PAT" \
-     -G --data-urlencode "workspace=$WORKSPACE_GID"
+   Step 2: Get projects in workspace
+   Tool: asana_get_projects(workspace="<workspace_gid>", team="<team_gid>")
+
+   Step 3: Get project sections
+   Tool: asana_get_project_sections(project_id="<project_gid>")
    ```
 
-3. **Set environment variables**
-   ```bash
-   export ASANA_PAT="your_pat_here"
-   export ASANA_WORKSPACE_GID="123456789"
-   export ASANA_PROJECT_GID="987654321"
-   ```
+## MCP Operations Reference
 
-## API Operations Reference
+### Workspace & Project Discovery
+
+#### Get All Workspaces
+
+```
+Tool: asana_list_workspaces()
+Returns: [{gid, name, organization}, ...]
+```
+
+#### Get Projects in Workspace
+
+```
+Tool: asana_get_projects(
+  workspace: "<workspace_gid>",
+  team: "<team_gid>",        // Optional: filter by team
+  archived: false            // Optional: exclude archived
+)
+Returns: [{gid, name, owner, ...}, ...]
+```
+
+#### Get Project Details
+
+```
+Tool: asana_get_project(
+  project_id: "<project_gid>",
+  opt_fields: "name,notes,owner,members,custom_fields"
+)
+Returns: {gid, name, notes, owner, members, custom_fields, ...}
+```
 
 ### Sections (Feature Grouping)
 
-#### Create a New Section (Feature)
+#### Get Sections in Project
 
-```bash
-create_section() {
-  local project_gid="$1"
-  local section_name="$2"
-
-  curl -X POST https://app.asana.com/api/1.0/sections \
-    -H "Authorization: Bearer $ASANA_PAT" \
-    -d "project=$project_gid" \
-    -d "name=$section_name"
-}
-
-# Usage
-create_section "$ASANA_PROJECT_GID" "Feature: User Authentication"
+```
+Tool: asana_get_project_sections(
+  project_id: "<project_gid>",
+  opt_fields: "name,projects"
+)
+Returns: [{gid, name}, ...]
 ```
 
-#### List Sections in Project
-
-```bash
-list_sections() {
-  local project_gid="$1"
-
-  curl -X GET "https://app.asana.com/api/1.0/projects/$project_gid/sections" \
-    -H "Authorization: Bearer $ASANA_PAT"
-}
-```
+**Note:** Asana MCP does not have a create_section tool. Use the project's existing sections
+or create sections manually in Asana UI before adding tasks.
 
 ### Tasks
 
 #### Create a Task
 
-```bash
-create_task() {
-  local name="$1"
-  local notes="$2"
-  local section_gid="$3"  # Optional: add to specific section
-
-  local data="projects[0]=$ASANA_PROJECT_GID"
-  data="$data&name=$(echo "$name" | jq -sRr @uri)"
-  data="$data&notes=$(echo "$notes" | jq -sRr @uri)"
-
-  if [ -n "$section_gid" ]; then
-    data="$data&membership=$section_gid"
-  fi
-
-  curl -X POST https://app.asana.com/api/1.0/tasks \
-    -H "Authorization: Bearer $ASANA_PAT" \
-    -d "$data"
-}
-
-# Usage example
-create_task \
-  "[BE] Implement JWT authentication endpoint" \
-  "Acceptance Criteria:
-- Endpoint accepts username/password
-- Returns JWT access + refresh tokens
-- Tokens are stored securely
-- Unit tests with 90%+ coverage
-
-Branch: feature/user-auth
-Related SA Task: #123456" \
-  "$SECTION_GID"
+```
+Tool: asana_create_task(
+  name: "[BE] Implement JWT authentication endpoint",
+  project_id: "<project_gid>",
+  section_id: "<section_gid>",      // Optional: add to specific section
+  html_notes: "<h3>Acceptance Criteria:</h3>
+              <ul>
+                <li>Endpoint accepts username/password</li>
+                <li>Returns JWT access + refresh tokens</li>
+                <li>Tokens are stored securely</li>
+                <li>Unit tests with 90%+ coverage</li>
+              </ul>
+              <p><strong>Branch:</strong> feature/user-auth</p>",
+  assignee: "me",                    // or email or user GID
+  due_on: "2025-02-01",              // Optional
+  start_on: "2025-01-25",            // Optional
+  followers: "user@example.com",     // Optional
+  completed: false,                  // Optional
+  resource_subtype: "default_task"   // or "milestone", "approval"
+)
+Returns: {gid, name, created_at, ...}
 ```
 
-#### Update Task Status (via Comment)
+#### Get Task Details
 
-```bash
-add_task_comment() {
-  local task_gid="$1"
-  local comment="$2"
+```
+Tool: asana_get_task(
+  task_id: "<task_gid>",
+  opt_fields: "name,notes,completed,assignee,due_on,custom_fields,memberships"
+)
+Returns: {gid, name, notes, completed, assignee, ...}
+```
 
-  curl -X POST "https://app.asana.com/api/1.0/tasks/$task_gid/stories" \
-    -H "Authorization: Bearer $ASANA_PAT" \
-    -d "text=$(echo "$comment" | jq -sRr @uri)"
-}
+#### Update Task Properties
 
-# Usage: Status update
-add_task_comment "$TASK_GID" "Status: In Progress
+```
+Tool: asana_update_task(
+  task_id: "<task_gid>",
+  name: "Updated task name",          // Optional
+  notes: "Updated description",       // Optional
+  assignee: "user@example.com",       // Optional
+  completed: false,                   // Optional
+  due_on: "2025-02-15",               // Optional
+  custom_fields: '{"field_gid": "value"}'  // Optional JSON string
+)
+Returns: {gid, name, ...}
+```
+
+#### Add Comment to Task (Status Update)
+
+```
+Tool: asana_create_task_story(
+  task_id: "<task_gid>",
+  text: "Status: In Progress
 
 Agent: [BE]
 Commit: abc123def
@@ -120,68 +134,198 @@ Coverage: 92%
 
 Started implementation of JWT endpoint.
 All unit tests passing."
-
-# Usage: Milestone comment
-add_task_comment "$TASK_GID" "🎉 Milestone: Backend API Complete
-
-All endpoints implemented and tested.
-Ready for frontend integration."
-```
-
-#### Get Task Details
-
-```bash
-get_task() {
-  local task_gid="$1"
-
-  curl -X GET "https://app.asana.com/api/1.0/tasks/$task_gid?opt_fields=name,notes,completed,memberships" \
-    -H "Authorization: Bearer $ASANA_PAT"
-}
+)
+Returns: {gid, created_at, ...}
 ```
 
 #### Mark Task Complete
 
-```bash
-complete_task() {
-  local task_gid="$1"
+```
+Tool: asana_update_task(
+  task_id: "<task_gid>",
+  completed: true
+)
+```
 
-  curl -X PUT "https://app.asana.com/api/1.0/tasks/$task_gid" \
-    -H "Authorization: Bearer $ASANA_PAT" \
-    -d "completed=true"
-}
+#### Delete Task
+
+```
+Tool: asana_delete_task(
+  task_id: "<task_gid>"
+)
 ```
 
 ### Task Dependencies
 
-#### Add Dependency
+#### Set Task Dependencies (Prerequisites)
 
-```bash
-add_dependency() {
-  local task_gid="$1"
-  local depends_on_task_gid="$2"
+```
+Tool: asana_set_task_dependencies(
+  task_id: "<task_gid>",
+  dependencies: ["<depends_on_task_gid_1>", "<depends_on_task_gid_2>"]
+)
+```
 
-  curl -X POST "https://app.asana.com/api/1.0/tasks/$task_gid/dependencies" \
-    -H "Authorization: Bearer $ASANA_PAT" \
-    -d "depend_on=$depends_on_task_gid"
-}
+**Example:** FE task depends on BE task completion
+```
+asana_set_task_dependencies(
+  task_id: "<fe_task_gid>",
+  dependencies: ["<be_task_gid>"]
+)
+```
 
-# Usage: FE task depends on BE task
-add_dependency "$FE_TASK_GID" "$BE_TASK_GID"
+#### Set Task Dependents (Blocking)
+
+```
+Tool: asana_set_task_dependents(
+  task_id: "<task_gid>",
+  dependents: ["<blocked_task_gid_1>", "<blocked_task_gid_2>"]
+)
+```
+
+**Example:** BE task blocks FE and QA tasks
+```
+asana_set_task_dependents(
+  task_id: "<be_task_gid>",
+  dependents: ["<fe_task_gid>", "<qa_task_gid>"]
+)
 ```
 
 ### Search and Query
 
 #### Search Tasks
 
-```bash
-search_tasks() {
-  local project_gid="$1"
-  local search_term="$2"
+```
+Tool: asana_search_tasks(
+  workspace: "<workspace_gid>",
+  text: "authentication",              // Optional: search term
+  projects_any: "<project_gid>",       // Optional: filter by project
+  assignee_any: "me",                  // Optional: my tasks
+  completed: false,                    // Optional: incomplete only
+  due_on_before: "2025-02-01",         // Optional: due date filter
+  resource_subtype: "default_task",    // Optional: task type
+  limit: 50                            // Optional: result count
+)
+Returns: [{gid, name, ...}, ...]
+```
 
-  curl -X GET "https://app.asana.com/api/1.0/projects/$project_gid/tasks" \
-    -H "Authorization: Bearer $ASANA_PAT" \
-    -G --data-urlencode "search=$search_term"
-}
+#### Get Tasks for Project
+
+```
+Tool: asana_get_tasks(
+  project: "<project_gid>",
+  section: "<section_gid>",            // Optional: filter by section
+  completed_since: "2025-01-01T00:00:00Z",  // Optional
+  opt_fields: "name,assignee,completed"
+)
+Returns: [{gid, name, assignee, completed}, ...]
+```
+
+### Users and Teams
+
+#### Get Current User Info
+
+```
+Tool: asana_get_user(
+  user_id: "me",                       // or omit (defaults to "me")
+  opt_fields: "name,email,workspaces"
+)
+Returns: {gid, name, email, workspaces, ...}
+```
+
+#### Get User by Email
+
+```
+Tool: asana_get_user(
+  user_id: "user@example.com",
+  opt_fields: "name,email"
+)
+```
+
+#### Get Teams in Workspace
+
+```
+Tool: asana_get_teams_for_workspace(
+  workspace_gid: "<workspace_gid>",
+  opt_fields: "name,description"
+)
+Returns: [{gid, name}, ...]
+```
+
+#### Get Team Members
+
+```
+Tool: asana_get_team_users(
+  team_id: "<team_gid>",
+  opt_fields: "name,email"
+)
+Returns: [{gid, name, email}, ...]
+```
+
+### Task Followers
+
+#### Add Followers to Task
+
+```
+Tool: asana_add_task_followers(
+  task_id: "<task_gid>",
+  followers: "user1@example.com,user2@example.com"  // comma-separated
+)
+```
+
+#### Remove Followers from Task
+
+```
+Tool: asana_remove_task_followers(
+  task_id: "<task_gid>",
+  followers: "user1@example.com"  // comma-separated
+)
+```
+
+### Project Status
+
+#### Create Project Status Update
+
+```
+Tool: asana_create_project_status(
+  project_gid: "<project_gid>",
+  color: "green",                   // "green", "yellow", "red", "blue"
+  title: "Feature Complete - Ready for PO",
+  html_text: "<p>All development tasks completed.</p>
+              <p>Ready for Product Owner validation.</p>"
+)
+```
+
+#### Get Project Statuses
+
+```
+Tool: asana_get_project_statuses(
+  project_gid: "<project_gid>",
+  limit: 10
+)
+Returns: [{gid, color, title, text, created_at}, ...]
+```
+
+### Attachments
+
+#### Get Attachments for Task
+
+```
+Tool: asana_get_attachments_for_object(
+  parent: "<task_gid>",
+  limit: 50
+)
+Returns: [{gid, name, download_url, view_url}, ...]
+```
+
+#### Get Attachment Details
+
+```
+Tool: asana_get_attachment(
+  attachment_gid: "<attachment_gid>",
+  opt_fields: "name,download_url,view_url"
+)
+Returns: {gid, name, download_url, view_url, ...}
 ```
 
 ## Standard Task Templates
@@ -191,26 +335,34 @@ search_tasks() {
 ```
 Name: [Agent_ID] [Verb] [Component]
 
-Notes:
-REQUIREMENTS:
-  1. [Specific requirement 1]
-  2. [Specific requirement 2]
+html_notes:
+<h3>REQUIREMENTS:</h3>
+<ol>
+  <li>Specific requirement 1</li>
+  <li>Specific requirement 2</li>
+</ol>
 
-ACCEPTANCE CRITERIA:
-  - [ ] [Criterion 1]
-  - [ ] [Criterion 2]
+<h3>ACCEPTANCE CRITERIA:</h3>
+<ul>
+  <li><input type="checkbox"> Criterion 1</li>
+  <li><input type="checkbox"> Criterion 2</li>
+</ul>
 
-DELIVERABLES:
-  - [File or component 1]
-  - [File or component 2]
+<h3>DELIVERABLES:</h3>
+<ul>
+  <li>File or component 1</li>
+  <li>File or component 2</li>
+</ul>
 
-CONSTRAINTS:
-  - Branch: feature/[feature-name]
-  - Related: [Link to requirements/design]
-  - Tech: [Technology specifics]
-  - Must NOT: [Things this agent should not do]
+<h3>CONSTRAINTS:</h3>
+<ul>
+  <li>Branch: feature/[feature-name]</li>
+  <li>Related: [Link to requirements/design]</li>
+  <li>Tech: [Technology specifics]</li>
+  <li>Must NOT: [Things this agent should not do]</li>
+</ul>
 
-Coverage Target: [80%+]
+<p><strong>Coverage Target:</strong> 80%+</p>
 ```
 
 ### Code Review Task Template
@@ -218,81 +370,91 @@ Coverage Target: [80%+]
 ```
 Name: SA Review: [Feature/Subtask]
 
-Notes:
-PR: [Link to PR]
-Author: [Agent who implemented]
-Files Changed: [Number]
+html_notes:
+<p><strong>PR:</strong> [Link to PR]</p>
+<p><strong>Author:</strong> [Agent who implemented]</p>
+<p><strong>Files Changed:</strong> [Number]</p>
 
-REVIEW CHECKLIST:
-Architecture:
-  - [ ] Follows established patterns
-  - [ ] Proper separation of concerns
-  - [ ] No security vulnerabilities
-  - [ ] Performance considered
+<h3>REVIEW CHECKLIST:</h3>
 
-Code Quality:
-  - [ ] Clean, readable code
-  - [ ] Proper error handling
-  - [ ] Meaningful variable names
-  - [ ] Appropriate comments
+<h4>Architecture:</h4>
+<ul>
+  <li><input type="checkbox"> Follows established patterns</li>
+  <li><input type="checkbox"> Proper separation of concerns</li>
+  <li><input type="checkbox"> No security vulnerabilities</li>
+  <li><input type="checkbox"> Performance considered</li>
+</ul>
 
-Testing:
-  - [ ] Unit tests comprehensive
-  - [ ] Edge cases covered
-  - [ ] Tests are meaningful
-  - [ ] Coverage target met ([X]%)
+<h4>Code Quality:</h4>
+<ul>
+  <li><input type="checkbox"> Clean, readable code</li>
+  <li><input type="checkbox"> Proper error handling</li>
+  <li><input type="checkbox"> Meaningful variable names</li>
+  <li><input type="checkbox"> Appropriate comments</li>
+</ul>
 
-Decision:
-  - [ ] APPROVED
-  - [ ] NEEDS REVISION (feedback below)
+<h4>Testing:</h4>
+<ul>
+  <li><input type="checkbox"> Unit tests comprehensive</li>
+  <li><input type="checkbox"> Edge cases covered</li>
+  <li><input type="checkbox"> Tests are meaningful</li>
+  <li><input type="checkbox"> Coverage target met ([X]%)</li>
+</ul>
+
+<h4>Decision:</h4>
+<ul>
+  <li><input type="checkbox"> APPROVED</li>
+  <li><input type="checkbox"> NEEDS REVISION (feedback below)</li>
+</ul>
 ```
 
 ## Task Status Flow Management
 
-### Status Transition Commands
+### Status Transition Patterns
 
-```bash
-# To Do → In Progress
-transition_to_in_progress() {
-  local task_gid="$1"
-  local agent="$2"
-  add_task_comment "$task_gid" "Status: In Progress
+#### To Do → In Progress
 
-Agent: $agent
-Started: $(date -Iseconds)
-Branch: feature/[name]"
-}
+```
+asana_create_task_story(
+  task_id: "<task_gid>",
+  text: "Status: In Progress
 
-# In Progress → Ready for Review
-transition_to_review() {
-  local task_gid="$1"
-  local agent="$2"
-  local commit="$3"
-  local coverage="$4"
+Agent: [BE]
+Started: 2025-01-25T10:00:00Z
+Branch: feature/user-auth"
+)
+```
 
-  add_task_comment "$task_gid" "Status: Ready for Review
+#### In Progress → Ready for Review
 
-Agent: $agent
-Completed: $(date -Iseconds)
-Commit: $commit
-Test Coverage: $coverage%
+```
+asana_create_task_story(
+  task_id: "<task_gid>",
+  text: "Status: Ready for Review
+
+Agent: [BE]
+Completed: 2025-01-26T15:30:00Z
+Commit: abc123def456
+Test Coverage: 92%
 
 Ready for SA review."
-}
+)
+```
 
-# In Review → Ready for PO (all tasks complete)
-transition_to_po() {
-  local section_gid="$1"
+#### Feature Complete → Ready for PO
 
-  add_task_comment "$section_gid" "🎯 Feature Complete: Ready for PO Validation
-
-All development tasks completed.
-All code reviews approved.
-Integration tests passing.
-Coverage: 80%+
-
-Ready for Product Owner acceptance testing."
-}
+```
+asana_create_project_status(
+  project_gid: "<project_gid>",
+  color: "green",
+  title: "Feature Complete: Ready for PO Validation",
+  html_text: "<p><strong>Feature:</strong> User Authentication</p>
+              <p>All development tasks completed.</p>
+              <p>All code reviews approved.</p>
+              <p>Integration tests passing.</p>
+              <p>Coverage: 85%+</p>
+              <p>Ready for Product Owner acceptance testing.</p>"
+)
 ```
 
 ## Agent-Specific Task Naming
@@ -311,145 +473,189 @@ Ready for Product Owner acceptance testing."
 ### Progress Update Comment
 
 ```
-🔄 Progress Update
+asana_create_task_story(
+  task_id: "<task_gid>",
+  text: "Progress Update
 
-Agent: [Agent_ID]
-Task: [Task name]
+Agent: [BE]
+Task: Implement login endpoint
 
 Completed:
-  ✅ [What was done]
+  ✅ Created LoginController
+  ✅ Implemented token generation
 
 In Progress:
-  🔄 [What's being worked on]
+  🔄 Adding unit tests
 
 Next:
-  ➡️ [Next step]
+  ➡️ Complete error handling tests
 
-Commit: [hash]
-Coverage: [X]%
+Commit: abc123
+Coverage: 78%"
+)
 ```
 
 ### Blocker Comment
 
 ```
-🚫 BLOCKER
+asana_create_task_story(
+  task_id: "<task_gid>",
+  text: "BLOCKER
 
 Task: [Task name]
-Blocker Type: [Technical | Business | Dependency]
+Blocker Type: Technical
 
 Description:
-[Detailed description of the blocker]
+Missing JWT library configuration for refresh token rotation.
 
 Impact:
-- [What tasks are affected]
-- [Estimated delay]
+- Cannot complete token service
+- FE integration blocked
 
 Proposed Resolution:
-- [Suggested solution]
+Consult SA for architecture guidance on token rotation strategy.
 
 Needs:
-- [Who needs to act]
+SA input on approach"
+)
 ```
 
 ### Milestone Comment
 
 ```
-🎉 Milestone: [Milestone Name]
+asana_create_task_story(
+  task_id: "<task_gid>",
+  text: "Milestone: Backend API Complete
 
-Feature: [Feature name]
-Completed: [Date]
+Feature: User Authentication
+Completed: 2025-01-26
 
 Summary:
-- [Brief summary of what was accomplished]
+All authentication endpoints implemented and tested.
+Ready for frontend integration.
 
 Stats:
-- Tasks: [X] completed
-- Commits: [X]
-- Coverage: [X]%
+- Tasks: 5 completed
+- Commits: 12
+- Coverage: 94%
 
 Next:
-- [What happens next]
+FE can now integrate with authentication API"
+)
 ```
 
 ## Bulk Operations
 
-### Create Multiple Tasks from SA Breakdown
+### Create Feature Tasks from SA Breakdown
 
-```bash
-create_feature_tasks() {
-  local feature_name="$1"
-  local section_gid="$2"
+```
+# After getting project_id and section_id from previous calls:
 
-  # Backend tasks
-  create_task "[BE] Implement user repository" \
-    "Acceptance Criteria: ..." "$section_gid"
+# Backend tasks
+asana_create_task(
+  name: "[BE] Implement user repository",
+  project_id: "<project_gid>",
+  section_id: "<section_gid>",
+  html_notes: "<h3>Acceptance Criteria:</h3>..."
+)
 
-  create_task "[BE] Implement authentication service" \
-    "Acceptance Criteria: ..." "$section_gid"
+asana_create_task(
+  name: "[BE] Implement authentication service",
+  project_id: "<project_gid>",
+  section_id: "<section_gid>",
+  html_notes: "<h3>Acceptance Criteria:</h3>...",
+  followers: "backend-lead@example.com"
+)
 
-  # Frontend tasks
-  create_task "[FE] Create login page component" \
-    "Acceptance Criteria: ..." "$section_gid"
+# Frontend tasks
+asana_create_task(
+  name: "[FE] Create login page component",
+  project_id: "<project_gid>",
+  section_id: "<section_gid>",
+  html_notes: "<h3>Acceptance Criteria:</h3>...",
+  assignee: "fe-dev@example.com"
+)
 
-  create_task "[FE] Implement authentication context" \
-    "Acceptance Criteria: ..." "$section_gid"
+asana_create_task(
+  name: "[FE] Implement authentication context",
+  project_id: "<project_gid>",
+  section_id: "<section_gid>",
+  html_notes: "<h3>Acceptance Criteria:</h3>..."
+)
 
-  # Database tasks
-  create_task "[DB] Create users table migration" \
-    "Acceptance Criteria: ..." "$section_gid"
-}
+# Database tasks
+asana_create_task(
+  name: "[DB] Create users table migration",
+  project_id: "<project_gid>",
+  section_id: "<section_gid>",
+  html_notes: "<h3>Acceptance Criteria:</h3>..."
+)
+```
+
+### Setup Dependencies After Creating Tasks
+
+```
+# After creating tasks and capturing their GIDs:
+
+asana_set_task_dependencies(
+  task_id: "<fe_task_gid>",
+  dependencies: ["<be_task_gid>", "<db_task_gid>"]
+)
+
+asana_set_task_dependents(
+  task_id: "<be_task_gid>",
+  dependents: ["<qa_task_gid>"]
+)
 ```
 
 ## Error Handling
 
-### Common API Errors
+### Common MCP Error Patterns
 
-```bash
-# Check for errors in API response
-check_asana_error() {
-  local response="$1"
+The MCP tools will return error objects. Handle them gracefully:
 
-  if echo "$response" | jq -e '.errors' > /dev/null; then
-    echo "Asana API Error:"
-    echo "$response" | jq -r '.errors[] | "\(.message): \(.help)"'
-    return 1
-  fi
-  return 0
-}
+**Example Pattern:**
+```
+1. If asana_create_task fails with "Project not found"
+   → First call asana_get_projects to verify project_gid
 
-# Usage with error handling
-response=$(create_task "Task name" "Notes" "$SECTION_GID")
-if check_asana_error "$response"; then
-  task_gid=$(echo "$response" | jq -r '.data.gid')
-  echo "Task created: $task_gid"
-fi
+2. If asana_update_task fails with "Task not found"
+   → First call asana_get_task to verify task_gid
+
+3. If asana_set_task_dependencies fails with "Dependency not found"
+   → Verify dependency task GIDs are correct
 ```
 
-## Quick Reference Commands
+## Quick Reference Workflow
 
-```bash
-# Quick task create
-alias asana-create='create_task'
-alias asana-comment='add_task_comment'
-alias asana-complete='complete_task'
+```
+# Initial Setup (do this once per session)
+1. asana_list_workspaces()           # Get workspace_gid
+2. asana_get_projects(workspace=...) # Get project_gid
+3. asana_get_project_sections(...)   # Get section_gid
 
-# Quick status update
-asana-status() {
-  add_task_comment "$1" "Status: $2
+# Feature Creation
+4. asana_create_task(...)            # Create tasks
+5. asana_set_task_dependencies(...)  # Set dependencies
 
-Agent: $3
-Commit: ${4:-N/A}
-Coverage: ${5:-N/A}%"
-}
+# Status Updates
+6. asana_create_task_story(...)      # Add status comments
+7. asana_update_task(...)            # Mark complete
+
+# Queries
+8. asana_search_tasks(...)           # Find tasks
+9. asana_get_task(...)               # Get task details
 ```
 
 ## Best Practices
 
-1. **Always include context in task notes** - Don't make agents hunt for information
-2. **Update status promptly** - Keep the project visible to PO
-3. **Use meaningful task names** - Start with verb, include component name
-4. **Document dependencies** - Link related tasks
-5. **Celebrate milestones** - Add 🎉 comments for completed features
-6. **Document blockers** - Don't hide problems, flag them immediately
-7. **Include commit hashes** - Trace every task to specific commits
-8. **Track coverage** - Always include test coverage percentage
+1. **Always discover workspace/project first** - Don't hardcode GIDs; use asana_list_workspaces and asana_get_projects
+2. **Include context in html_notes** - Use HTML formatting for readable task descriptions
+3. **Update status promptly** - Keep the project visible to PO with asana_create_task_story
+4. **Use meaningful task names** - Start with [AGENT] prefix, include verb and component
+5. **Document dependencies** - Use asana_set_task_dependencies to link related tasks
+6. **Celebrate milestones** - Add milestone comments with emojis
+7. **Document blockers** - Use asana_create_task_story to flag issues immediately
+8. **Track coverage** - Always include test coverage percentage in status updates
+9. **Use opt_fields** - Request only the fields you need for efficiency
+10. **Handle errors gracefully** - Verify GIDs before using them in dependent calls
