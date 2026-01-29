@@ -2,7 +2,18 @@
   "permissions": {
     "allow": [
       "Skill(agent-creator)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(git checkout:*)",
+      "Bash(dotnet:*)",
+      "Bash(npm create vite:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run lint)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(tree:*)",
+      "Bash(curl:*)",
+      "Bash(pkill:*)"
     ]
   }
 }

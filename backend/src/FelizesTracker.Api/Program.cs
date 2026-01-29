@@ -1,16 +1,35 @@
+using FelizesTracker.Infrastructure.Extensions;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
+// Add database context
+builder.Services.AddAppDbContext(builder.Configuration);
+
+// Add health checks
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<FelizesTracker.Infrastructure.Data.AppDbContext>("sqlite-database");
+
 var app = builder.Build();
+
+// Initialize database on startup
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<FelizesTracker.Infrastructure.Data.AppDbContext>();
+    await dbContext.EnsureDatabaseCreatedAsync();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+// Map health check endpoint
+app.MapHealthChecks("/health");
 
 var summaries = new[]
 {
