@@ -13,7 +13,10 @@
       "Bash(git commit:*)",
       "Bash(tree:*)",
       "Bash(curl:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(taskkill:*)",
+      "Bash(test:*)",
+      "Bash(npm run test:*)"
     ]
   }
 }

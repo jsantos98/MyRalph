@@ -3,13 +3,18 @@ using FelizesTracker.Infrastructure.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddControllers();
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+// Add response caching
+builder.Services.AddResponseCaching();
 
 // Add database context
 builder.Services.AddAppDbContext(builder.Configuration);
 
-// Add health checks
+// Add health checks with custom response writer
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<FelizesTracker.Infrastructure.Data.AppDbContext>("sqlite-database");
 
@@ -28,7 +33,16 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-// Map health check endpoint
+app.UseHttpsRedirection();
+
+app.UseAuthorization();
+
+// Use response caching
+app.UseResponseCaching();
+
+app.MapControllers();
+
+// Map health check endpoint (legacy, for compatibility)
 app.MapHealthChecks("/health");
 
 var summaries = new[]
