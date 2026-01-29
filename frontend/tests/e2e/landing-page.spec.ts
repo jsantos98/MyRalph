@@ -81,9 +81,6 @@ test.describe('Landing Page - E2E Tests', () => {
     test('should refresh health status when button is clicked', async () => {
       await landingPage.waitForHealthStatus();
 
-      // Get initial status
-      const initialVersion = await landingPage.getVersion();
-
       // Click refresh
       await landingPage.refresh();
       await landingPage.waitForHealthStatus();
@@ -191,7 +188,7 @@ test.describe('Landing Page - E2E Tests', () => {
   });
 
   test.describe('Responsive Design', () => {
-    test('should display correctly on mobile viewport', async ({ page, viewport }) => {
+    test('should display correctly on mobile viewport', async ({ page }) => {
       // Set mobile viewport
       await page.setViewportSize({ width: 375, height: 667 });
 
